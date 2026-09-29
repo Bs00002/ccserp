@@ -96,7 +96,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClick={() => onNavigate('orders')}
         />
         <KpiCard
-          label="ACTIVE DEALERS"
+          label="ACTIVE DISTRIBUTORS"
           value={dealers.length}
           icon="storefront"
           trend="up"

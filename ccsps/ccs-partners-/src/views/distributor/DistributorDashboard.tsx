@@ -290,7 +290,7 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
           trend="up"
         />
         <KpiCard
-          label="ASSIGNED DEALERS"
+          label="ASSIGNED CLIENTS"
           value={dealers.length}
           icon="group"
         />

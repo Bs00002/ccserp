@@ -45,9 +45,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const rawRole = (currentUser.role || 'ADMIN').toString().toUpperCase();
   const displayRole = rawRole.includes('WAREHOUSE')
     ? 'WAREHOUSE'
-    : (rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE'))
-    ? 'EMPLOYEE'
-    : rawRole;
+    : rawRole.includes('ADMIN')
+    ? 'ADMIN'
+    : rawRole.includes('DEALER')
+    ? 'DISTRIBUTOR'
+    : 'EMPLOYEE';
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-3 sm:px-4 h-12 bg-white border-b border-[#e2e8f0] font-body text-sm shadow-xs">
@@ -161,14 +163,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <button
                 onClick={() => handleRoleSelect('DISTRIBUTOR')}
                 className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#f8fafc] ${
-                  (rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) ? 'bg-[#f0fdf4] font-bold text-[#14532d]' : 'text-[#334155]'
+                  (rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) && !rawRole.includes('DEALER') ? 'bg-[#f0fdf4] font-bold text-[#14532d]' : 'text-[#334155]'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px] text-[#16a34a]">badge</span>
                   <span>Employee Portal</span>
                 </div>
-                {(rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
+                {(rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) && !rawRole.includes('DEALER') && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
               </button>
 
               <button
