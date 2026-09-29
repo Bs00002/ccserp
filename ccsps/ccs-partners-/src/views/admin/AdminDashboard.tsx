@@ -24,15 +24,6 @@ interface AdminDashboardProps {
   onCreateOrder?: () => void;
 }
 
-const SALES_GRAPH_DATA = [
-  { month: 'May', sales: 62 },
-  { month: 'Jun', sales: 85 },
-  { month: 'Jul', sales: 94 },
-  { month: 'Aug', sales: 112 },
-  { month: 'Sep', sales: 105 },
-  { month: 'Oct', sales: 120 },
-];
-
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   orders = [],
   dealers = [],
@@ -44,6 +35,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigate = () => {},
 }) => {
   const [timeFilter, setTimeFilter] = useState('This Month');
+
+  const salesChartData = orders.length > 0
+    ? [{ month: 'Current', sales: Math.round(orders.reduce((a, b) => a + (b.grandTotal || 0), 0) / 1000) }]
+    : [{ month: 'No Data', sales: 0 }];
 
   const pendingOrdersCount = orders.filter((o) => o.status === 'Submitted' || o.status === 'Processing').length;
   const lowStockCount = products.filter((p) => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
@@ -72,7 +67,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             className="px-3 py-1.5 bg-[#fef3c7] hover:bg-[#fde68a] text-[#b45309] border border-[#fcd34d] font-bold text-xs rounded shadow-2xs flex items-center gap-1 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
-            2 Pending Approvals
+            0 Pending Approvals
           </button>
           <button
             onClick={() => onNavigate('orders')}
@@ -88,56 +83,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard
           label="TOTAL SALES TURNOVER"
-          value="₹1.20 Cr"
+          value={`₹${((orders.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0)) / 100000).toFixed(2)} Lakhs`}
           icon="trending_up"
           trend="up"
           onClick={() => onNavigate('orders')}
         />
         <KpiCard
           label="PENDING ORDERS"
-          value={pendingOrdersCount || 12}
+          value={pendingOrdersCount}
           icon="pending_actions"
           accentBorder="blue"
           onClick={() => onNavigate('orders')}
         />
         <KpiCard
           label="ACTIVE DEALERS"
-          value={dealers.length || 850}
+          value={dealers.length}
           icon="storefront"
           trend="up"
           onClick={() => onNavigate('dealers')}
         />
         <KpiCard
           label="DISTRIBUTOR DEPOTS"
-          value={distributors.length || 120}
+          value={distributors.length}
           icon="badge"
           onClick={() => onNavigate('distributors')}
         />
 
         <KpiCard
           label="FIELD SALES STAFF"
-          value="45"
+          value={distributors.length}
           icon="directions_run"
           trend="up"
           onClick={() => onNavigate('distributors')}
         />
         <KpiCard
           label="PENDING REGISTRATIONS"
-          value="2"
+          value={0}
           icon="how_to_reg"
           accentBorder="yellow"
           onClick={() => onNavigate('registration-approval')}
         />
         <KpiCard
           label="PENDING CLAIMS"
-          value={pendingExpensesCount || 3}
+          value={pendingExpensesCount}
           icon="receipt_long"
           accentBorder="yellow"
           onClick={() => onNavigate('expenses')}
         />
         <KpiCard
           label="LOW STOCK SKUS"
-          value={lowStockCount || 8}
+          value={lowStockCount}
           icon="warning"
           accentBorder="red"
           onClick={() => onNavigate('products')}
@@ -164,8 +159,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="material-symbols-outlined text-[20px]">person_add</span>
             </div>
             <div>
-              <div className="font-bold text-[#0f172a] text-xs">2 Registration Approvals</div>
-              <div className="text-[10px] text-[#b45309] font-medium">Satara & Sangli dealer applications</div>
+              <div className="font-bold text-[#0f172a] text-xs">Pending Account Approvals</div>
+              <div className="text-[10px] text-[#b45309] font-medium">Dealer & Distributor applications</div>
             </div>
           </div>
 
@@ -178,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="material-symbols-outlined text-[20px]">receipt_long</span>
             </div>
             <div>
-              <div className="font-bold text-[#0f172a] text-xs">{pendingExpensesCount || 3} Pending Expense Claims</div>
+              <div className="font-bold text-[#0f172a] text-xs">{pendingExpensesCount} Pending Expense Claims</div>
               <div className="text-[10px] text-[#b45309] font-medium">Field staff travel fuel & meal claims</div>
             </div>
           </div>
@@ -192,8 +187,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="material-symbols-outlined text-[20px]">inventory_2</span>
             </div>
             <div>
-              <div className="font-bold text-[#0f172a] text-xs">{lowStockCount || 8} Low Stock Products</div>
-              <div className="text-[10px] text-[#dc2626] font-medium">Chitra SuperGro & Crop Care SKUs</div>
+              <div className="font-bold text-[#0f172a] text-xs">{lowStockCount} Low Stock Products</div>
+              <div className="text-[10px] text-[#dc2626] font-medium">Product inventory requiring restock</div>
             </div>
           </div>
         </div>
@@ -227,7 +222,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={SALES_GRAPH_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={salesChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3} />
@@ -304,28 +299,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {(orders || []).slice(0, 5).map((ord) => (
-                <tr
-                  key={ord.id}
-                  onClick={() => {
-                    if (onSelectOrder) onSelectOrder(ord);
-                    onNavigate('orders');
-                  }}
-                  className="hover:bg-[#f8fafc] cursor-pointer transition-colors"
-                >
-                  <td className="p-3 font-bold text-[#14532d]">{ord.orderNumber}</td>
-                  <td className="p-3 text-[#64748b]">{ord.date}</td>
-                  <td className="p-3 font-bold text-[#0f172a]">{ord.dealerName}</td>
-                  <td className="p-3 text-[#64748b]">{ord.distributorName}</td>
-                  <td className="p-3 text-right font-semibold">{(ord.items || []).length} SKUs</td>
-                  <td className="p-3 text-right font-extrabold text-[#15803d]">
-                    ₹{(ord.grandTotal || 0).toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-3">
-                    <StatusBadge status={ord.status} />
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-[#64748b]">
+                    No B2B orders found in the database.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                (orders || []).slice(0, 5).map((ord) => (
+                  <tr
+                    key={ord.id}
+                    onClick={() => {
+                      if (onSelectOrder) onSelectOrder(ord);
+                      onNavigate('orders');
+                    }}
+                    className="hover:bg-[#f8fafc] cursor-pointer transition-colors"
+                  >
+                    <td className="p-3 font-bold text-[#14532d]">{ord.orderNumber}</td>
+                    <td className="p-3 text-[#64748b]">{ord.date}</td>
+                    <td className="p-3 font-bold text-[#0f172a]">{ord.dealerName}</td>
+                    <td className="p-3 text-[#64748b]">{ord.distributorName}</td>
+                    <td className="p-3 text-right font-semibold">{(ord.items || []).length} SKUs</td>
+                    <td className="p-3 text-right font-extrabold text-[#15803d]">
+                      ₹{(ord.grandTotal || 0).toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-3">
+                      <StatusBadge status={ord.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

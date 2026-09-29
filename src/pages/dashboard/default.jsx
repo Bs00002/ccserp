@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Alert, Button } from '@mui/material';
+import ReloadOutlined from '@ant-design/icons/ReloadOutlined';
 import useAuth from 'hooks/useAuth';
 import api from 'api/client';
 
@@ -11,25 +12,25 @@ export default function DashboardDefault() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDashboard = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get('/dashboard/');
+      setData(res.data);
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+      const msg = err?.response?.data?.error || err?.message || "Failed to load dashboard data from server.";
+      setError(msg);
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (token && token.startsWith('mock-')) {
-          setData({ mock: true });
-          return;
-        }
-        const res = await api.get('/dashboard/');
-        setData(res.data);
-      } catch (err) {
-        console.error("Dashboard fetch error, using role default state:", err);
-        setData({ mock: true });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     if (user) {
       fetchDashboard();
     } else {
@@ -45,6 +46,23 @@ export default function DashboardDefault() {
     );
   }
 
+  if (error) {
+    return (
+      <Box sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 4 }}>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" startIcon={<ReloadOutlined />} onClick={fetchDashboard}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
+
   // Route to the specific role dashboard
   const role = user?.role;
   
@@ -56,7 +74,5 @@ export default function DashboardDefault() {
     return <DealerDashboard data={data} />;
   }
 
-  // Default fallback to Dealer Dashboard if role is missing or generic
   return <DealerDashboard data={data} />;
 }
-

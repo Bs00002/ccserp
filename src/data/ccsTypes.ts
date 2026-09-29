@@ -15,6 +15,8 @@ export interface Employee {
   salary: number;
   annualTarget: number;
   monthlyTarget: number;
+  monthlySalesPlan?: number;
+  monthlyCollectionPlan?: number;
   status: 'Active' | 'On Leave' | 'Resigned' | 'Suspended';
   aadhaarNo?: string;
   panNo?: string;
@@ -294,6 +296,8 @@ export interface Target {
   assigneeId: string;
   assigneeName: string;
   targetAmount: number;
+  monthlySalesPlan?: number;
+  monthlyCollectionPlan?: number;
   achievedAmount: number;
   targetUnits?: number;
   achievedUnits?: number;

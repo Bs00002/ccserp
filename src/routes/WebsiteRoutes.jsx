@@ -3,7 +3,7 @@ import Loadable from 'components/Loadable';
 
 // Render simple placeholder layouts since we just want a simple modern landing page
 const WebsiteLayout = Loadable(lazy(() => import('pages/website/layout')));
-const Home = Loadable(lazy(() => import('pages/website/home')));
+const AppIndex = Loadable(lazy(() => import('pages/website/AppIndex')));
 const About = Loadable(lazy(() => import('pages/website/about')));
 const Products = Loadable(lazy(() => import('pages/website/products')));
 const Contact = Loadable(lazy(() => import('pages/website/contact')));
@@ -14,7 +14,7 @@ const WebsiteRoutes = {
   path: '/',
   element: <WebsiteLayout />,
   children: [
-    { index: true, element: <Home /> },
+    { index: true, element: <AppIndex /> },
     { path: 'about', element: <About /> },
     { path: 'products', element: <Products /> },
     { path: 'become-dealer', element: <BecomeDealer /> },

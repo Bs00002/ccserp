@@ -54,19 +54,51 @@ export const AdminOrderDetail: React.FC<AdminOrderDetailProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => window.print()}
             className="px-3 py-1.5 text-xs font-semibold border border-[#0f62fe] text-[#0f62fe] bg-white hover:bg-[#edf5ff] cursor-pointer"
           >
             Print Invoice
           </button>
-          <button
-            onClick={() => onUpdateStatus && onUpdateStatus(order.id, 'Approved')}
-            className="px-3 py-1.5 text-xs font-bold bg-[#198038] text-white hover:bg-[#116226] cursor-pointer"
-          >
-            Approve Dispatch
-          </button>
+
+          {(order.status === 'Pending Approval' || order.status === 'Submitted' || order.status === 'Draft') && (
+            <>
+              <button
+                onClick={() => onUpdateStatus && onUpdateStatus(order.id, 'Approved')}
+                className="px-3 py-1.5 text-xs font-bold bg-[#198038] text-white hover:bg-[#116226] cursor-pointer"
+              >
+                Approve Order
+              </button>
+              <button
+                onClick={() => onUpdateStatus && onUpdateStatus(order.id, 'Rejected')}
+                className="px-3 py-1.5 text-xs font-bold bg-[#da1e28] text-white hover:bg-[#ba1b23] cursor-pointer"
+              >
+                Reject
+              </button>
+            </>
+          )}
+
+          {order.status === 'Approved' && (
+            <button
+              onClick={() => onUpdateStatus && onUpdateStatus(order.id, 'Ready to Dispatch')}
+              className="px-3 py-1.5 text-xs font-bold bg-[#0f62fe] text-white hover:bg-[#0043ce] cursor-pointer"
+            >
+              Generate Bilty → Ready Dispatch
+            </button>
+          )}
+
+          {(order.status === 'Ready to Dispatch' || order.status === 'Ready Dispatch') && (
+            <span className="px-3 py-1 text-xs font-semibold bg-[#e8daff] text-[#6929c4] border border-[#d4bbff]">
+              Warehouse: Ready to Dispatch
+            </span>
+          )}
+
+          {order.status === 'Dispatched' && (
+            <span className="px-3 py-1 text-xs font-semibold bg-[#defbe6] text-[#0e6027] border border-[#a7f0ba]">
+              Dispatched & En Route
+            </span>
+          )}
         </div>
       </div>
 

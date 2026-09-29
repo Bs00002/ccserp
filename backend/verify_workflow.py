@@ -164,10 +164,17 @@ def run_tests():
     }, format='json')
     assert res_lr_ok.status_code == 200, f"LR Generation failed for Warehouse: {res_lr_ok.data}"
     order_obj.refresh_from_db()
-    assert order_obj.status == OrderStatus.DISPATCHED
+    # Verify LR save does NOT auto-dispatch
+    assert order_obj.status == OrderStatus.READY_DISPATCH
     assert order_obj.lr_number == 'LR-TEST-001'
     assert order_obj.vehicle_number == 'MH-12-PQ-9988'
-    print("[OK] TEST 5 PASSED: Warehouse completed dispatch for SAME Order ID. Status: Dispatched (LR: LR-TEST-001, Transporter: Test Transporter, Vehicle: MH-12-PQ-9988).")
+
+    # Explicit dispatch by warehouse
+    res_dispatch = client.post(f'/api/orders/{order_id}/dispatch_order/', {}, format='json')
+    assert res_dispatch.status_code == 200
+    order_obj.refresh_from_db()
+    assert order_obj.status == OrderStatus.DISPATCHED
+    print("[OK] TEST 5 PASSED: Warehouse LR saved without auto-dispatch, then explicitly dispatched. Status: Dispatched (LR: LR-TEST-001, Transporter: Test Transporter, Vehicle: MH-12-PQ-9988).")
 
     # ---------------------------------------------------------
     # TEST 6: Check Order & LR Visibility across Admin, Creator Employee & Recipient Distributor

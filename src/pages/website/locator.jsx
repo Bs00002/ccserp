@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 // @ts-ignore
 import api from 'api/client';
+import { dealers as mockDealers } from 'data/ccsMock';
 
 export default function LocatorPage() {
   const [search, setSearch] = useState('');
@@ -19,9 +20,28 @@ export default function LocatorPage() {
     setLoading(true);
     try {
       const res = await api.get(`/public/dealers/?search=${query}`);
-      setResults(res.data);
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setResults(res.data);
+      } else {
+        const filteredMock = mockDealers.filter(d => 
+          !query || 
+          d.name?.toLowerCase().includes(query.toLowerCase()) || 
+          d.shopName?.toLowerCase().includes(query.toLowerCase()) || 
+          d.state?.toLowerCase().includes(query.toLowerCase()) || 
+          d.district?.toLowerCase().includes(query.toLowerCase())
+        );
+        setResults(filteredMock);
+      }
     } catch (err) {
       console.error('Failed to fetch dealers', err);
+      const filteredMock = mockDealers.filter(d => 
+        !query || 
+        d.name?.toLowerCase().includes(query.toLowerCase()) || 
+        d.shopName?.toLowerCase().includes(query.toLowerCase()) || 
+        d.state?.toLowerCase().includes(query.toLowerCase()) || 
+        d.district?.toLowerCase().includes(query.toLowerCase())
+      );
+      setResults(filteredMock);
     } finally {
       setLoading(false);
     }

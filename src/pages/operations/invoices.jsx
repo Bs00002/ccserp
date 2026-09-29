@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grid, Typography, Box, Stack, Drawer, Divider, Chip, IconButton, Button } from '@mui/material';
+import { Grid, Typography, Box, Stack, Drawer, Divider, Chip, IconButton, Button, Alert } from '@mui/material';
 import DataTable from 'components/DataTable';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
 import MainCard from 'components/MainCard';
@@ -16,12 +16,14 @@ import StatusBadge from 'components/ui/StatusBadge';
 const statusColorMap = {
   'Paid': 'success',
   'Unpaid': 'error',
+  'Pending': 'warning',
   'Partial': 'warning'
 };
 
 export default function InvoicesAdmin() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -29,23 +31,55 @@ export default function InvoicesAdmin() {
 
   const fetchInvoices = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.get('/orders/invoices/');
-      const mapped = res.data.map(i => ({
-        id: i.id,
-        invoiceNumber: i.invoice_number,
-        date: new Date(i.created_at).toLocaleDateString(),
-        dealer: 'Dealer Name', // Could be fetched by expanding the serializer, hardcoded fallback for now
-        total: parseFloat(i.total_amount),
-        paid: parseFloat(i.total_amount) - parseFloat(i.balance_due),
-        pending: parseFloat(i.balance_due),
-        status: i.status
-      }));
-      setInvoices(mapped);
+      const res = await api.get('/invoices/');
+      const data = res.data?.results || res.data;
+      if (Array.isArray(data)) {
+        const mapped = data.map(i => {
+          const total = parseFloat(i.total_amount || 0);
+          const pending = parseFloat(i.balance_due || 0);
+          return {
+            id: i.id,
+            invoiceNumber: i.invoice_number,
+            orderNumber: i.order_number || '-',
+            date: new Date(i.created_at || i.generated_at).toLocaleDateString(),
+            dealer: i.dealer_name || i.dealer || 'Dealer',
+            total: total,
+            paid: total - pending,
+            pending: pending,
+            status: i.status || 'Pending',
+            pdf: i.pdf
+          };
+        });
+        setInvoices(mapped);
+      } else {
+        setInvoices([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch invoices', err);
+      setError('Failed to load invoices from server. Please verify backend connection.');
+      setInvoices([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (inv) => {
+    if (!inv) return;
+    if (inv.pdf) {
+      window.open(inv.pdf, '_blank');
+      return;
+    }
+    try {
+      const res = await api.get(`/invoices/${inv.id}/generate_pdf/`);
+      if (res.data?.download_url) {
+        window.open(res.data.download_url, '_blank');
+      } else {
+        alert(`Invoice ${inv.invoiceNumber} PDF download initiated.`);
+      }
+    } catch (e) {
+      alert(`Could not download PDF for invoice ${inv.invoiceNumber}`);
     }
   };
 
@@ -97,7 +131,7 @@ export default function InvoicesAdmin() {
           <IconButton size="small" color="primary" onClick={() => openInvoiceDetail(params.row)}>
             <EyeOutlined />
           </IconButton>
-          <IconButton size="small" color="secondary" onClick={() => console.log('Download', params.row)}>
+          <IconButton size="small" color="secondary" onClick={() => handleDownloadPdf(params.row)}>
             <DownloadOutlined />
           </IconButton>
         </Stack>
@@ -121,6 +155,12 @@ export default function InvoicesAdmin() {
         </Stack>
       </Grid>
       
+      {error && (
+        <Grid item xs={12}>
+          <Alert severity="error">{error}</Alert>
+        </Grid>
+      )}
+
       <Grid item xs={12} sm={6} md={3}>
         <AnalyticEcommerce title="Total Invoices" count={kpis.total} icon={<FileText size={20} />} color="primary" />
       </Grid>
@@ -192,8 +232,8 @@ export default function InvoicesAdmin() {
 
               {/* Action Buttons */}
               <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-                <Button variant="contained" color="primary" startIcon={<DownloadOutlined />}>Download PDF</Button>
-                <Button variant="outlined" color="primary" startIcon={<PrinterOutlined />}>Print</Button>
+                <Button variant="contained" color="primary" startIcon={<DownloadOutlined />} onClick={() => handleDownloadPdf(selectedInvoice)}>Download PDF</Button>
+                <Button variant="outlined" color="primary" startIcon={<PrinterOutlined />} onClick={() => window.print()}>Print</Button>
                 <Button variant="outlined" color="primary" startIcon={<ShareAltOutlined />}>Share</Button>
                 <Button variant="outlined" color="secondary" startIcon={<UploadOutlined />}>Upload LR</Button>
               </Stack>

@@ -23,6 +23,7 @@ interface AdminDashboardProps {
   fieldActivities?: FieldActivity[];
   distributors?: any[];
   expenses?: any[];
+  kpiData?: any;
   onSelectOrder?: (order: Order) => void;
   onNavigate?: (view: string) => void;
   onCreateOrder?: () => void;
@@ -50,12 +51,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   dealers = [],
   products = [],
   fieldActivities = [],
+  distributors = [],
+  expenses: _expenses = [],
+  kpiData,
   onSelectOrder,
   onNavigate,
 }) => {
   const [timeFilter, setTimeFilter] = useState('This Month');
 
   const lowStockCount = products.filter((p) => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
+
+  const totalSalesVal = kpiData?.total_sales_display
+    ?? (orders.length > 0 ? '₹' + orders.reduce((s, o) => s + (o.grandTotal || 0), 0).toLocaleString('en-IN') : '₹0');
+  const todayOrdersVal = kpiData?.today_orders_count ?? 0;
+  const pendingOrdersVal = kpiData?.pending_orders_count ?? orders.filter((o) => o.status === 'Pending Approval').length;
+  const totalDealersVal = kpiData?.total_dealers_count ?? dealers.length;
+  const totalDistributorsVal = kpiData?.total_distributors_count ?? distributors?.length ?? 0;
+  const activeStaffVal = kpiData?.active_field_staff_count ?? fieldActivities?.length ?? 0;
+  const totalProductsVal = kpiData?.total_products_count ?? products.length;
+  const lowStockVal = kpiData?.low_stock_count ?? lowStockCount;
+
+  const salesGraph = kpiData?.sales_graph_data && kpiData.sales_graph_data.length > 0
+    ? kpiData.sales_graph_data
+    : SALES_GRAPH_DATA;
+
+  const orderStatusPie = kpiData?.order_status_distribution && kpiData.order_status_distribution.length > 0
+    ? kpiData.order_status_distribution
+    : ORDER_STATUS_PIE;
 
   return (
     <div className="space-y-6 font-body bg-[#F5FBF6] p-2 md:p-4 rounded-2xl">
@@ -97,28 +119,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           label="TOTAL SALES"
-          value="₹1.2Cr"
+          value={totalSalesVal}
           icon="trending_up"
           trend="up"
           onClick={() => onNavigate && onNavigate('orders')}
         />
         <KpiCard
           label="TODAY'S ORDERS"
-          value="42"
+          value={todayOrdersVal}
           icon="shopping_bag"
           trend="up"
           onClick={() => onNavigate && onNavigate('orders')}
         />
         <KpiCard
           label="PENDING ORDERS"
-          value="12"
+          value={pendingOrdersVal}
           icon="pending_actions"
           accentBorder="yellow"
           onClick={() => onNavigate && onNavigate('orders')}
         />
         <KpiCard
           label="TOTAL DEALERS"
-          value={dealers.length > 0 ? dealers.length : 850}
+          value={totalDealersVal}
           icon="storefront"
           trend="up"
           onClick={() => onNavigate && onNavigate('dealers')}
@@ -126,27 +148,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <KpiCard
           label="TOTAL DISTRIBUTORS"
-          value="120"
+          value={totalDistributorsVal}
           icon="groups"
           trend="up"
           onClick={() => onNavigate && onNavigate('distributors')}
         />
         <KpiCard
           label="ACTIVE FIELD STAFF"
-          value="45"
+          value={activeStaffVal}
           icon="directions_run"
           trend="up"
           onClick={() => onNavigate && onNavigate('field-ops')}
         />
         <KpiCard
           label="TOTAL PRODUCTS"
-          value={products.length > 0 ? products.length : 150}
+          value={totalProductsVal}
           icon="inventory_2"
           onClick={() => onNavigate && onNavigate('products')}
         />
         <KpiCard
           label="LOW STOCK"
-          value={lowStockCount || 8}
+          value={lowStockVal}
           icon="warning"
           accentBorder="red"
           onClick={() => onNavigate && onNavigate('inventory')}
@@ -180,7 +202,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={SALES_GRAPH_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={salesGraph} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2E7D32" stopOpacity={0.35} />
@@ -210,7 +232,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={ORDER_STATUS_PIE}
+                  data={orderStatusPie}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
@@ -218,11 +240,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   paddingAngle={3}
                   dataKey="value"
                 >
-                  {ORDER_STATUS_PIE.map((entry, index) => (
+                  {orderStatusPie.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(val: any) => [`${val}%`, 'Orders']} />
+                <Tooltip formatter={(val: any) => [val, 'Orders']} />
                 <Legend iconSize={8} layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
               </PieChart>
             </ResponsiveContainer>

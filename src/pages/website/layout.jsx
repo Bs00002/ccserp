@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
-import { Box, AppBar, Toolbar, Typography, Button, Container, Stack, Grid, IconButton, Divider, Link as MuiLink, Menu, MenuItem } from '@mui/material';
-import { FacebookOutlined, TwitterOutlined, InstagramOutlined, LinkedinOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, DownOutlined } from '@ant-design/icons';
+import { Box, AppBar, Toolbar, Typography, Button, Container, Stack, Grid, IconButton, Divider, Link as MuiLink } from '@mui/material';
+import { FacebookOutlined, TwitterOutlined, InstagramOutlined, LinkedinOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, AndroidOutlined } from '@ant-design/icons';
 
 export default function WebsiteLayout() {
   const [scrolled, setScrolled] = useState(false);
@@ -69,31 +69,38 @@ export default function WebsiteLayout() {
               ))}
               
               <Button
-                onClick={handleLoginClick}
-                endIcon={<DownOutlined style={{ fontSize: '10px' }} />}
+                component="a"
+                href="/downloads/CCS-Connect.apk"
+                download="CCS-Connect.apk"
+                variant="outlined"
+                color="success"
+                startIcon={<AndroidOutlined />}
                 sx={{ 
-                  color: 'text.primary',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textTransform: 'none',
-                  fontSize: '1rem',
-                  '&:hover': { color: 'primary.main', bgcolor: 'transparent' }
+                  borderRadius: 2,
+                  px: 2,
+                  borderWidth: 2,
+                  '&:hover': { borderWidth: 2 }
                 }}
               >
-                Login
+                Download APK
               </Button>
-              <Menu
-                anchorEl={anchorEl}
-                open={openLogin}
-                onClose={handleLoginClose}
-                PaperProps={{ elevation: 2, sx: { minWidth: 200, mt: 1, borderRadius: 2 } }}
+
+              <Button
+                component={RouterLink}
+                to="/login"
+                variant="contained"
+                color="primary"
+                sx={{ 
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  px: 2.5
+                }}
               >
-                <MenuItem component={RouterLink} to="/login" onClick={handleLoginClose} sx={{ py: 1.5 }}>
-                  Dealer Login
-                </MenuItem>
-                <MenuItem component={RouterLink} to="/login" onClick={handleLoginClose} sx={{ py: 1.5 }}>
-                  Distributor / Employee Login
-                </MenuItem>
-              </Menu>
+                Partner Login
+              </Button>
             </Stack>
           </Toolbar>
         </Container>
@@ -138,6 +145,21 @@ export default function WebsiteLayout() {
               <Typography variant="h6" color="white" fontWeight="bold" mb={3}>Resources</Typography>
               <Stack spacing={2}>
                 <MuiLink component={RouterLink} to="/contact" sx={{ color: '#9ca3af', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>Contact Support</MuiLink>
+                <MuiLink 
+                  href="/downloads/CCS-Connect.apk" 
+                  download="CCS-Connect.apk" 
+                  sx={{ 
+                    color: '#4ade80', 
+                    fontWeight: 700, 
+                    textDecoration: 'none', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    '&:hover': { color: '#86efac', textDecoration: 'underline' } 
+                  }}
+                >
+                  <AndroidOutlined style={{ fontSize: '18px' }} /> Download APK
+                </MuiLink>
                 <MuiLink href="#" sx={{ color: '#9ca3af', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>Download Brochure</MuiLink>
                 <MuiLink href="#" sx={{ color: '#9ca3af', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>Privacy Policy</MuiLink>
                 <MuiLink href="#" sx={{ color: '#9ca3af', textDecoration: 'none', '&:hover': { color: 'primary.light' } }}>Terms & Conditions</MuiLink>

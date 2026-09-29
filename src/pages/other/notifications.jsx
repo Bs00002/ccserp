@@ -38,7 +38,9 @@ import EyeOutlined from '@ant-design/icons/EyeOutlined';
 import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 import RightOutlined from '@ant-design/icons/RightOutlined';
 
-import { notifications as notifData } from 'data/ccsMock';
+import api from 'api/client';
+import useRealtime from 'hooks/useRealtime';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const TYPE_AVATAR = {
   info: { icon: <InfoCircleOutlined />, color: 'primary' },
@@ -53,7 +55,39 @@ const TAB_CATEGORIES = ['All', 'Unread', 'Order', 'Payment', 'Stock', 'Attendanc
 export default function NotificationsPage() {
   const [tab, setTab] = useState(0);
   const [query, setQuery] = useState('');
-  const [items, setItems] = useState(notifData);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/notifications/');
+      const data = Array.isArray(res.data) ? res.data : [];
+      setItems(data.map((n) => ({
+        id: String(n.id),
+        title: n.title,
+        message: n.message,
+        type: n.notification_type || 'info',
+        category: n.category || 'System',
+        time: n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
+        read: n.is_read || false,
+        actionUrl: n.action_url || null
+      })));
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Real-time listener: auto-fetch notifications on notification.created
+  useRealtime('notification.created', () => {
+    fetchNotifications();
+  });
 
   const unreadCount = useMemo(() => items.filter((n) => !n.read).length, [items]);
 
@@ -72,10 +106,31 @@ export default function NotificationsPage() {
     });
   }, [tab, items, query]);
 
-  const markAllRead = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllRead = async () => {
+    try {
+      await api.post('/notifications/mark_all_read/');
+    } catch {}
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
   const deleteAll = () => setItems([]);
-  const toggleRead = (id) => setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: !n.read } : n));
+
+  const toggleRead = async (id) => {
+    try {
+      await api.post(`/notifications/${id}/mark_read/`);
+    } catch {}
+    setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
   const deleteOne = (id) => setItems((prev) => prev.filter((n) => n.id !== id));
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Stack spacing={2.75}>

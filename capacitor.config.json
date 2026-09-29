@@ -1,0 +1,10 @@
+{
+  "appId": "com.chitracropscience.connect",
+  "appName": "CCS Connect",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  }
+}

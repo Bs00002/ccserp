@@ -246,6 +246,8 @@ export const INITIAL_DISTRIBUTORS: Distributor[] = [
     state: 'Maharashtra',
     dealersCount: 42,
     monthlySales: 1850000,
+    monthlySalesPlan: 2000000,
+    monthlyCollectionPlan: 1800000,
     outstandingBalance: 145000,
     status: 'Active',
   },
@@ -261,6 +263,8 @@ export const INITIAL_DISTRIBUTORS: Distributor[] = [
     state: 'Maharashtra',
     dealersCount: 38,
     monthlySales: 2400000,
+    monthlySalesPlan: 2500000,
+    monthlyCollectionPlan: 2200000,
     outstandingBalance: 210000,
     status: 'Active',
   }

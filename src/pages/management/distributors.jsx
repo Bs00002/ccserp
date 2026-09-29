@@ -45,7 +45,14 @@ import WarningOutlined from '@ant-design/icons/WarningOutlined';
 import PercentageOutlined from '@ant-design/icons/PercentageOutlined';
 import CloseOutlined from '@ant-design/icons/CloseOutlined';
 
-import { distributors, formatINR } from 'data/ccsMock';
+import api from 'api/client';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+
+const formatINR = (val) => {
+  const num = Number(val) || 0;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+};
 
 const statusColor = (status) => {
   switch (status) {
@@ -58,11 +65,73 @@ const statusColor = (status) => {
 
 export default function DistributorsPage() {
   const navigate = useNavigate();
+  const [distributors, setDistributors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [tabValue, setTabValue] = useState('All');
   const [page, setPage] = useState(1);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const rowsPerPage = 10;
+
+  const fetchDistributors = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let data = [];
+      try {
+        const res = await api.get('/crm/distributors/');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          data = res.data;
+        }
+      } catch {
+        // fallback to admin users query
+      }
+
+      if (data.length === 0) {
+        const adminRes = await api.get('/admin/users/?role=Distributor');
+        if (Array.isArray(adminRes.data)) {
+          data = adminRes.data.map((u, i) => ({
+            id: String(u.id),
+            code: u.ccs_id || `DST-${i + 1}`,
+            name: u.company_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+            firmName: u.company_name || u.username,
+            ownerName: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
+            mobile: u.phone || '—',
+            district: u.city || u.distributor_profile?.district || 'General',
+            creditLimit: parseFloat(u.distributor_profile?.monthly_sales_plan || 500000),
+            outstanding: 0,
+            status: u.is_active ? 'Active' : 'Inactive'
+          }));
+        }
+      } else {
+        data = data.map((d, i) => ({
+          id: String(d.id),
+          code: d.code || `DST-${i + 1}`,
+          name: d.name || d.company_name,
+          firmName: d.company_name || d.name,
+          ownerName: d.contact_person || d.name,
+          mobile: d.phone || '—',
+          district: d.city || d.district || 'General',
+          creditLimit: parseFloat(d.credit_limit || d.monthly_sales_plan || 500000),
+          outstanding: parseFloat(d.outstanding_balance || 0),
+          status: d.status || 'Active'
+        }));
+      }
+
+      setDistributors(data);
+    } catch (err) {
+      console.error('Failed to load distributors:', err);
+      setError('Failed to load distributors from database.');
+      setDistributors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDistributors();
+  }, []);
 
   const filtered = useMemo(() => {
     let list = [...distributors];
@@ -70,22 +139,22 @@ export default function DistributorsPage() {
     if (search) {
       const s = search.toLowerCase();
       list = list.filter(d =>
-        d.name.toLowerCase().includes(s) ||
-        d.code.toLowerCase().includes(s) ||
-        d.ownerName.toLowerCase().includes(s) ||
-        d.firmName.toLowerCase().includes(s) ||
-        d.district.toLowerCase().includes(s) ||
-        d.mobile.includes(s)
+        (d.name && d.name.toLowerCase().includes(s)) ||
+        (d.code && d.code.toLowerCase().includes(s)) ||
+        (d.ownerName && d.ownerName.toLowerCase().includes(s)) ||
+        (d.firmName && d.firmName.toLowerCase().includes(s)) ||
+        (d.district && d.district.toLowerCase().includes(s)) ||
+        (d.mobile && d.mobile.includes(s))
       );
     }
     return list;
-  }, [search, tabValue]);
+  }, [distributors, search, tabValue]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const pageData = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
-  const totalOutstanding = distributors.reduce((s, d) => s + d.outstanding, 0);
-  const totalCredit = distributors.reduce((s, d) => s + d.creditLimit, 0);
+  const totalOutstanding = distributors.reduce((s, d) => s + (d.outstanding || 0), 0);
+  const totalCredit = distributors.reduce((s, d) => s + (d.creditLimit || 0), 0);
   const activeDistributors = distributors.filter(d => d.status === 'Active');
 
   const kpis = {
@@ -97,8 +166,21 @@ export default function DistributorsPage() {
 
   const tabs = ['All', 'Active', 'Inactive'];
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Grid container rowSpacing={4.5} columnSpacing={2.75}>
+      {error && (
+        <Grid item size={12}>
+          <Alert severity="error">{error}</Alert>
+        </Grid>
+      )}
       <Grid item size={12}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" sx={{ gap: 2 }}>
           <Box>

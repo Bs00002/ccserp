@@ -18,8 +18,8 @@ def record_test(name, passed, detail=""):
 admin_token = None
 try:
     res = requests.post(f"{BASE_URL}/auth/login/", json={
-        "email_or_username": "admin",
-        "password": "adminpass"
+        "email_or_username": "master_admin@ccs.com",
+        "password": "AdminPass123!"
     })
     if res.status_code == 200:
         data = res.json()
@@ -33,8 +33,8 @@ except Exception as e:
 distributor_token = None
 try:
     res = requests.post(f"{BASE_URL}/auth/login/", json={
-        "email_or_username": "testdistributor@example.com",
-        "password": "Testing@123"
+        "email_or_username": "master_emp@ccs.com",
+        "password": "EmpPass123!"
     })
     if res.status_code == 200:
         data = res.json()
@@ -48,8 +48,8 @@ except Exception as e:
 dealer_token = None
 try:
     res = requests.post(f"{BASE_URL}/auth/login/", json={
-        "email_or_username": "testdealer@example.com",
-        "password": "Testing@123"
+        "email_or_username": "master_dealer@ccs.com",
+        "password": "DealerPass123!"
     })
     if res.status_code == 200:
         data = res.json()

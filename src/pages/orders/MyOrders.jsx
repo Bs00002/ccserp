@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Stack, Button, Chip, Grid, Paper, IconButton } from '@mui/material';
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import MainCard from 'components/MainCard';
 import api from 'api/client';
 import { formatINR } from 'data/ccsMock';
 import useAuth from 'hooks/useAuth';
+import useRealtime from 'hooks/useRealtime';
 
 export default function MyOrders() {
   const navigate = useNavigate();
@@ -14,31 +15,40 @@ export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMyOrders = async () => {
-      try {
-        const res = await api.get('/orders/orders/');
-        const myOrders = res.data.map((o, idx) => ({
-          id: o.id || idx + 1,
-          orderCode: `ORD-2026-0${o.id || idx + 42}`,
-          dealerName: o.dealer?.company_name || o.dealer?.name || 'Agro Point Corp',
-          product: o.items?.[0]?.product?.name || 'Chitra Zyme 500ml',
-          quantity: o.items?.reduce((acc, item) => acc + (item.quantity || 0), 0) || 25,
-          gst: '18%',
-          totalAmount: parseFloat(o.total_amount || 15000),
-          date: o.created_at ? new Date(o.created_at).toLocaleDateString() : 'Today',
-          remarks: o.remarks || 'Standard dealer order',
-          status: o.status || 'Approved'
-        }));
-        setOrders(myOrders);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMyOrders();
+  const fetchMyOrders = useCallback(async () => {
+    try {
+      const res = await api.get('/orders/orders/');
+      const myOrders = (Array.isArray(res.data) ? res.data : []).map((o, idx) => ({
+        id: o.id || idx + 1,
+        orderCode: o.order_number || `ORD-${o.id}`,
+        dealerName: o.dealer_name || (o.dealer?.company_name || o.dealer?.name) || 'Direct Dealer',
+        product: o.items?.[0]?.product_name || (o.items && o.items.length > 0 ? `${o.items.length} Products` : 'No Products'),
+        quantity: o.items?.reduce((acc, item) => acc + (item.quantity || 0), 0) || 0,
+        gst: '18%',
+        totalAmount: parseFloat(o.total_amount || 0),
+        date: o.created_at ? new Date(o.created_at).toLocaleDateString() : '-',
+        remarks: o.remarks || '-',
+        status: o.status || 'Pending Approval'
+      }));
+      setOrders(myOrders);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchMyOrders();
+  }, [fetchMyOrders]);
+
+  // Real-time listener: auto-update on order status changes (approved, rejected, bilty, dispatched)
+  useRealtime(
+    ['order.created', 'order.updated', 'order.approved', 'order.bilty_created', 'order.lr_created', 'order.dispatched'],
+    () => {
+      fetchMyOrders();
+    }
+  );
 
   const columns = [
     { field: 'orderCode', headerName: 'Order ID', flex: 1, minWidth: 120, renderCell: (params) => <Typography fontWeight={700} color="#1a237e">{params.value}</Typography> },

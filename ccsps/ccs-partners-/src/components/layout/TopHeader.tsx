@@ -14,6 +14,8 @@ interface TopHeaderProps {
   onTabChange?: (tab: string) => void;
   toggleMobileMenu?: () => void;
   unreadNotificationsCount?: number;
+  onGoBack?: () => void;
+  canGoBack?: boolean;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -28,6 +30,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onTabChange,
   toggleMobileMenu,
   unreadNotificationsCount = 0,
+  onGoBack,
+  canGoBack = false,
 }) => {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -39,23 +43,42 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   };
 
   const rawRole = (currentUser.role || 'ADMIN').toString().toUpperCase();
+  const displayRole = rawRole.includes('WAREHOUSE')
+    ? 'WAREHOUSE'
+    : (rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE'))
+    ? 'EMPLOYEE'
+    : rawRole;
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 h-12 bg-white border-b border-[#e2e8f0] font-body text-sm shadow-xs">
-      {/* Left: Brand Logo + Mobile Toggle + Nav Links */}
-      <div className="flex items-center gap-3">
+    <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-3 sm:px-4 h-12 bg-white border-b border-[#e2e8f0] font-body text-sm shadow-xs">
+      {/* Left: Brand Logo + Mobile Toggle + Back Button + Nav Links */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Mobile Hamburger 3 Lines */}
         <button
           onClick={toggleMobileMenu}
-          className="md:hidden text-[#475569] hover:text-[#0f172a] p-1 rounded hover:bg-[#f1f5f9] transition-colors"
+          className="md:hidden text-[#475569] hover:text-[#0f172a] p-1.5 rounded hover:bg-[#f1f5f9] transition-colors cursor-pointer"
           aria-label="Toggle menu"
+          title="Open Navigation Menu"
         >
-          <span className="material-symbols-outlined text-[22px]">menu</span>
+          <span className="material-symbols-outlined text-[24px]">menu</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        {/* Universal Back Button for Mobile / Secondary Views */}
+        {canGoBack && onGoBack && (
+          <button
+            onClick={onGoBack}
+            className="flex items-center gap-1 px-2 py-1 bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#0f172a] rounded font-bold text-xs transition cursor-pointer border border-[#cbd5e1]"
+            title="Go Back"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span className="text-[11px] hidden xs:inline">Back</span>
+          </button>
+        )}
+
+        <div className="flex items-center gap-2 sm:gap-3">
           <ChitraLogo variant="horizontal" size="md" showTagline={true} />
           <span className="hidden sm:inline-block ml-1 px-2 py-0.5 bg-[#dcfce7] text-[#14532d] text-[10px] font-bold border border-[#86efac] uppercase tracking-wider rounded">
-            {rawRole} PORTAL
+            {displayRole} PORTAL
           </span>
         </div>
       </div>
@@ -71,8 +94,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <span className="font-medium">Search ERP (Ctrl+K)</span>
         </button>
 
-        {/* Quick action button (Hidden for Dealer Portal) */}
-        {!rawRole.includes('DEALER') && (
+        {/* Quick action button (Hidden for Dealer & Warehouse Portal) */}
+        {!rawRole.includes('DEALER') && !rawRole.includes('WAREHOUSE') && (
           <button
             onClick={onQuickAction || (() => onTabChange && onTabChange('create-order'))}
             className="p-1.5 text-[#16a34a] hover:text-[#15803d] hover:bg-[#f0fdf4] rounded-md transition-colors cursor-pointer h-9 w-9 flex items-center justify-center"
@@ -82,19 +105,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        {/* Notification bell (Hidden for Dealer Portal) */}
-        {!rawRole.includes('DEALER') && (
-          <button
-            onClick={onOpenNotifications}
-            className="relative p-1.5 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f8fafc] border border-transparent hover:border-[#cbd5e1] rounded-md transition-colors cursor-pointer h-9 w-9 flex items-center justify-center"
-            title="Notifications"
-          >
-            <span className="material-symbols-outlined text-[18px]">notifications</span>
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#dc2626] rounded-full animate-pulse" />
-            )}
-          </button>
-        )}
+        {/* Notification bell */}
+        <button
+          onClick={onOpenNotifications}
+          className="relative p-1.5 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f8fafc] border border-transparent hover:border-[#cbd5e1] rounded-md transition-colors cursor-pointer h-9 w-9 flex items-center justify-center"
+          title="Notifications"
+        >
+          <span className="material-symbols-outlined text-[18px]">notifications</span>
+          {unreadNotificationsCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#dc2626] rounded-full animate-pulse" />
+          )}
+        </button>
 
         {/* Help button */}
         <button
@@ -113,7 +134,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           >
             <span className="w-2 h-2 bg-[#16a34a] rounded-full shrink-0" />
             <span className="hidden sm:inline text-[#64748b] font-medium">Role:</span>
-            <span className="font-bold text-[#0f172a]">{rawRole}</span>
+            <span className="font-bold text-[#0f172a]">{displayRole}</span>
             <span className="material-symbols-outlined text-[18px] text-[#64748b]">
               expand_more
             </span>
@@ -140,14 +161,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <button
                 onClick={() => handleRoleSelect('DISTRIBUTOR')}
                 className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#f8fafc] ${
-                  rawRole.includes('DISTRIBUTOR') ? 'bg-[#f0fdf4] font-bold text-[#14532d]' : 'text-[#334155]'
+                  (rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) ? 'bg-[#f0fdf4] font-bold text-[#14532d]' : 'text-[#334155]'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[16px] text-[#16a34a]">domain</span>
-                  <span>Distributor / Employee</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#16a34a]">badge</span>
+                  <span>Employee Portal</span>
                 </div>
-                {rawRole.includes('DISTRIBUTOR') && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
+                {(rawRole.includes('DISTRIBUTOR') || rawRole.includes('EMPLOYEE')) && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
               </button>
 
               <button
@@ -157,10 +178,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[16px] text-[#16a34a]">storefront</span>
-                  <span>Dealer Portal</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#16a34a]">domain</span>
+                  <span>Distributor Portal</span>
                 </div>
                 {rawRole.includes('DEALER') && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
+              </button>
+
+              <button
+                onClick={() => handleRoleSelect('WAREHOUSE')}
+                className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#f8fafc] ${
+                  rawRole.includes('WAREHOUSE') ? 'bg-[#f0fdf4] font-bold text-[#14532d]' : 'text-[#334155]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] text-[#16a34a]">inventory_2</span>
+                  <span>Warehouse Portal</span>
+                </div>
+                {rawRole.includes('WAREHOUSE') && <span className="material-symbols-outlined text-[16px] text-[#16a34a]">check</span>}
               </button>
             </div>
           )}
@@ -215,8 +249,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 }}
                 className="w-full text-left px-3 py-2 hover:bg-[#f0fdf4] flex items-center gap-2 text-[#14532d] font-bold"
               >
-                <span className="material-symbols-outlined text-[16px] text-[#16a34a]">storefront</span>
-                <span>Dealer Business Profile</span>
+                <span className="material-symbols-outlined text-[16px] text-[#16a34a]">domain</span>
+                <span>Distributor Business Profile</span>
               </button>
               <button
                 onClick={() => {

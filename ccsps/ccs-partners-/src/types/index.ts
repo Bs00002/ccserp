@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'DISTRIBUTOR' | 'DEALER';
+export type UserRole = 'ADMIN' | 'DISTRIBUTOR' | 'DEALER' | 'WAREHOUSE';
 
 export interface User {
   id: string;
@@ -16,6 +16,7 @@ export interface User {
   gstin?: string;
   creditLimit?: number;
   outstandingBalance?: number;
+  kmRate?: number;
 }
 
 export type OrderStatus =
@@ -24,11 +25,13 @@ export type OrderStatus =
   | 'Pending Approval'
   | 'Approved'
   | 'Processing'
+  | 'Rejected'
+  | 'Bilty Uploaded'
+  | 'Ready to Dispatch'
   | 'Dispatched'
   | 'In Transit'
   | 'Delivered'
-  | 'Cancelled'
-  | 'Rejected';
+  | 'Cancelled';
 
 export type PaymentStatus = 'Paid' | 'Pending' | 'Partial' | 'Overdue';
 
@@ -62,8 +65,17 @@ export interface Order {
   grandTotal: number;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentTerms?: string;
+  biltyNumber?: string;
+  biltyPdf?: string;
+  biltyDate?: string;
+  biltyUploadedByName?: string;
   lrNumber?: string;
+  lrReceiptUpload?: string;
+  lrDate?: string;
+  lrGeneratedByName?: string;
   transporter?: string;
+  vehicleNumber?: string;
   expectedDelivery?: string;
   remarks?: string;
   createdByName?: string;
@@ -106,7 +118,10 @@ export interface Distributor {
   state: string;
   dealersCount: number;
   monthlySales: number;
+  monthlySalesPlan?: number;
+  monthlyCollectionPlan?: number;
   outstandingBalance: number;
+  kmRate?: number;
   status: 'Active' | 'Inactive';
 }
 
@@ -144,9 +159,16 @@ export interface AttendanceRecord {
   totalHours?: string; // "8h 15m"
   workingHours?: string;
   overtime?: string; // "0h 15m"
-  status: 'Present' | 'Late' | 'Absent' | 'Half Day' | 'Leave' | 'Running' | 'Idle';
+  status: 'Working' | 'Present' | 'Late' | 'Absent' | 'Half Day' | 'Leave' | 'Running' | 'Idle';
   locationCheckIn?: string;
   locationCheckOut?: string;
+  latitude?: number;
+  longitude?: number;
+  currentLocation?: string;
+  currentLatitude?: number;
+  currentLongitude?: number;
+  currentLocationTimestamp?: string;
+  isActive?: boolean;
   loginImage?: string;
   logoutImage?: string;
   reason?: string;
@@ -159,6 +181,11 @@ export interface Expense {
   employeeName: string;
   date: string;
   type: string;
+  startingKm?: number;
+  endingKm?: number;
+  totalKm?: number;
+  kmRate?: number;
+  kmAmount?: number;
   rideKm?: number;
   totalRideKm?: number;
   busTrainCarFair?: number;

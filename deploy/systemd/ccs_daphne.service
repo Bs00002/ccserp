@@ -1,0 +1,34 @@
+[Unit]
+Description=CCS Connect ERP — Daphne ASGI Application Server
+After=network.target postgresql.service redis.service
+Requires=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=ccs
+Group=ccs
+WorkingDirectory=/var/www/ccs_connect/backend
+EnvironmentFile=/etc/ccs_connect/production.env
+
+# Daphne command serving ASGI application over local TCP port 8000
+ExecStart=/var/www/ccs_connect/backend/venv/bin/daphne \
+    -b 127.0.0.1 \
+    -p 8000 \
+    --access-log /var/log/ccs_connect/daphne_access.log \
+    ccs_backend.asgi:application
+
+Restart=always
+RestartSec=3
+KillMode=mixed
+TimeoutStopSec=10
+
+# Security Sandboxing
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+# File Descriptors Limit for Concurrent WebSockets
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

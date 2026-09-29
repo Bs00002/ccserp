@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Serve existing files and directories directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Direct all other routes to React index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Correct MIME type for Android APK downloads
+AddType application/vnd.android.package-archive .apk
+
+# Allow downloads and CORS
+<IfModule mod_headers.c>
+  <FilesMatch "\.(apk)$">
+    Header set Content-Disposition "attachment"
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>

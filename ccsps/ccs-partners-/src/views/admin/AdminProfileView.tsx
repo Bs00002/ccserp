@@ -36,11 +36,11 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ currentUser })
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
             <span className="font-bold text-[#64748b]">User Code:</span>
-            <div className="font-mono font-bold text-[#0f172a] mt-0.5">{currentUser.code || 'CCS-EMP-1001'}</div>
+            <div className="font-mono font-bold text-[#0f172a] mt-0.5">{currentUser.code || currentUser.id || '--'}</div>
           </div>
           <div>
             <span className="font-bold text-[#64748b]">Primary Territory:</span>
-            <div className="font-semibold text-[#0f172a] mt-0.5">{currentUser.territory || 'HQ / All India'}</div>
+            <div className="font-semibold text-[#0f172a] mt-0.5">{currentUser.territory || '--'}</div>
           </div>
           <div>
             <span className="font-bold text-[#64748b]">Phone Number:</span>

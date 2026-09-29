@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { createContext, useMemo, useState, useEffect } from 'react';
+import { realtimeService } from 'services/websocket';
 
 // ==============================|| AUTH CONTEXT ||============================== //
 
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
       if (storedUser && token) {
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
+        realtimeService.connect();
       }
     } catch (e) {
       console.error('Failed to parse user from local storage', e);
@@ -28,11 +30,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = (userData, accessToken) => {
+  const login = (userData, accessToken, refreshToken = null) => {
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('access_token', accessToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
+    realtimeService.connect();
   };
 
   const logout = () => {
@@ -40,7 +46,8 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem('access_token');
-    // Note: HttpOnly refresh cookie needs an API call to clear or rely on expiration.
+    localStorage.removeItem('refresh_token');
+    realtimeService.disconnect();
   };
 
   const memoizedValue = useMemo(

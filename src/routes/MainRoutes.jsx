@@ -19,7 +19,11 @@ const OrdersAdmin = Loadable(lazy(() => import('pages/orders/list')));
 const OrderCreate = Loadable(lazy(() => import('pages/orders/create')));
 const MyOrders = Loadable(lazy(() => import('pages/orders/MyOrders')));
 const InvoicesAdmin = Loadable(lazy(() => import('pages/operations/invoices')));
+const DispatchAdmin = Loadable(lazy(() => import('pages/operations/dispatch')));
+const CollectionsAdmin = Loadable(lazy(() => import('pages/operations/collections')));
 const PendingPayments = Loadable(lazy(() => import('pages/operations/pending-payments')));
+const FieldCollections = Loadable(lazy(() => import('pages/operations/field-collections')));
+const WarehouseAdmin = Loadable(lazy(() => import('pages/products/warehouse')));
 const FieldExpenses = Loadable(lazy(() => import('pages/operations/field-expenses')));
 const FieldAttendance = Loadable(lazy(() => import('pages/operations/FieldAttendance')));
 const FieldSupport = Loadable(lazy(() => import('pages/operations/FieldSupport')));
@@ -57,8 +61,11 @@ const MainRoutes = {
         { path: 'assignments', element: <AssignmentsAdmin /> },
         { path: 'products', element: <ProductsAdmin /> },
         { path: 'orders', element: <OrdersAdmin /> },
+        { path: 'dispatch', element: <DispatchAdmin /> },
         { path: 'invoices', element: <InvoicesAdmin /> },
         { path: 'payments', element: <PendingPayments /> },
+        { path: 'collections', element: <CollectionsAdmin /> },
+        { path: 'warehouse', element: <WarehouseAdmin /> },
         { path: 'expenses', element: <ExpensesAdmin /> },
         { path: 'attendance', element: <AttendanceAdmin /> },
         { path: 'tracking', element: <LiveTrackingAdmin /> },
@@ -69,6 +76,30 @@ const MainRoutes = {
       ]
     },
     {
+      path: 'warehouse',
+      element: <DashboardLayout />,
+      children: [
+        { index: true, element: <DispatchAdmin /> },
+        { path: 'dashboard', element: <DispatchAdmin /> },
+        { path: 'dispatch', element: <DispatchAdmin /> },
+        { path: 'stock', element: <WarehouseAdmin /> },
+        { path: 'inventory', element: <WarehouseAdmin /> },
+        { path: 'orders', element: <OrdersAdmin /> },
+        { path: 'profile', element: <ProfilePage /> }
+      ]
+    },
+    {
+      path: 'app',
+      element: <DashboardLayout />,
+      children: [
+        { path: 'dispatch', element: <DispatchAdmin /> },
+        { path: 'orders', element: <OrdersAdmin /> },
+        { path: 'invoices', element: <InvoicesAdmin /> },
+        { path: 'collections', element: <CollectionsAdmin /> },
+        { path: 'warehouse', element: <WarehouseAdmin /> }
+      ]
+    },
+    {
       path: 'field',
       element: <DashboardLayout />,
       children: [
@@ -76,6 +107,7 @@ const MainRoutes = {
         { path: 'dashboard', element: <DashboardDefault /> },
         { path: 'attendance', element: <FieldAttendance /> },
         { path: 'expenses', element: <FieldExpenses /> },
+        { path: 'collections', element: <FieldCollections /> },
         { path: 'orders/create', element: <OrderCreate /> },
         { path: 'orders', element: <MyOrders /> },
         { path: 'support', element: <FieldSupport /> },

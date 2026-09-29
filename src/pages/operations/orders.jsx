@@ -24,7 +24,13 @@ import Badge from '@mui/material/Badge';
 
 import MainCard from 'components/MainCard';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
-import { orders, formatINR } from 'data/ccsMock';
+import api from 'api/client';
+import CircularProgress from '@mui/material/CircularProgress';
+
+const formatINR = (val) => {
+  const num = Number(val) || 0;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+};
 
 import SearchOutlined from '@ant-design/icons/SearchOutlined';
 import PlusOutlined from '@ant-design/icons/PlusOutlined';
@@ -70,21 +76,50 @@ const statusColorMap = {
 };
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tabValue, setTabValue] = useState('All');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const todayStr = '2025-07-27';
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/orders/orders/');
+        const data = Array.isArray(res.data) ? res.data : [];
+        setOrders(data.map(o => ({
+          id: String(o.id),
+          orderNo: o.order_number || `ORD-${o.id}`,
+          dealerName: o.dealer_name || 'Dealer',
+          shopName: o.dealer_name || 'Agro Shop',
+          distributorName: o.created_by_name || 'Central CCS',
+          employeeName: o.created_by_name || 'Staff',
+          status: o.status || 'Pending Approval',
+          createdAt: o.created_at ? o.created_at.split('T')[0] : '',
+          itemsCount: (o.items && Array.isArray(o.items)) ? o.items.length : 1,
+          grandTotal: parseFloat(o.total_amount || o.grand_total || 0),
+          paymentStatus: o.payment_status || 'Pending'
+        })));
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
 
   const kpis = useMemo(() => ({
-    today: orders.filter(o => o.createdAt === todayStr).length,
+    today: orders.length,
     pending: orders.filter(o => ['Draft', 'Submitted', 'Pending Approval'].includes(o.status)).length,
     approved: orders.filter(o => ['Approved', 'Packing', 'Ready Dispatch'].includes(o.status)).length,
     dispatched: orders.filter(o => o.status === 'Dispatched').length,
     delivered: orders.filter(o => o.status === 'Delivered').length,
     completed: orders.filter(o => ['Completed', 'Invoice Generated', 'Payment Pending'].includes(o.status)).length
-  }), []);
+  }), [orders]);
 
   const orderCountsByStatus = useMemo(() => {
     const m = {};
@@ -94,7 +129,7 @@ export default function OrdersPage() {
       m['All']++;
     });
     return m;
-  }, []);
+  }, [orders]);
 
   const filtered = useMemo(() => {
     return orders.filter(o => {
@@ -103,14 +138,14 @@ export default function OrdersPage() {
       if (!search) return true;
       const s = search.toLowerCase();
       return (
-        o.orderNo.toLowerCase().includes(s) ||
-        o.dealerName.toLowerCase().includes(s) ||
-        o.shopName.toLowerCase().includes(s) ||
-        o.distributorName.toLowerCase().includes(s) ||
-        o.employeeName.toLowerCase().includes(s)
+        (o.orderNo && o.orderNo.toLowerCase().includes(s)) ||
+        (o.dealerName && o.dealerName.toLowerCase().includes(s)) ||
+        (o.shopName && o.shopName.toLowerCase().includes(s)) ||
+        (o.distributorName && o.distributorName.toLowerCase().includes(s)) ||
+        (o.employeeName && o.employeeName.toLowerCase().includes(s))
       );
     });
-  }, [search, tabValue]);
+  }, [orders, search, tabValue]);
 
   const pagedData = useMemo(() => {
     const start = page * rowsPerPage;

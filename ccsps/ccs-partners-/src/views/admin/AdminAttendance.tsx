@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { AttendanceRecord, User } from '../../types';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { hrApi } from '../../api/client';
-import { ImageProofModal } from '../../components/common/ImageProofModal';
+import { AttendanceDetailModal } from '../../components/common/AttendanceDetailModal';
 
 interface AdminAttendanceProps {
   currentUser?: User;
@@ -15,73 +14,33 @@ export const AdminAttendance: React.FC<AdminAttendanceProps> = ({
   attendanceRecords = [],
   onRefresh,
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [locationStatus, setLocationStatus] = useState<string>('');
-  const [successMsg, setSuccessMsg] = useState<string>('');
+  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Modal State for Image Proof Viewer
-  const [proofModalState, setProofModalState] = useState<{
-    isOpen: boolean;
-    title: string;
-    imageUrl?: string;
-    employeeName?: string;
-    date?: string;
-    time?: string;
-    status?: string;
-    details?: Record<string, string | number | undefined>;
-  }>({
-    isOpen: false,
-    title: '',
+  const handleManualRefresh = async () => {
+    if (!onRefresh) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  const filtered = attendanceRecords.filter((rec) => {
+    const matchesSearch =
+      (rec.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.date || '').includes(searchTerm) ||
+      (rec.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.currentLocation || rec.locationCheckIn || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || rec.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  const isDistributor = currentUser?.role === 'DISTRIBUTOR';
-
-  const handleClockIn = async () => {
-    setLoading(true);
-    setLocationStatus('Getting GPS Location...');
-    
-    let gpsLocation = 'GPS: 18.5204° N, 73.8567° E (Pune, MH)';
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          gpsLocation = `GPS: ${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`;
-        },
-        () => {}
-      );
-    }
-
-    try {
-      await hrApi.clockIn({
-        location: gpsLocation,
-        photo: 'selfie_captured_live.jpg'
-      });
-      setSuccessMsg('Successfully checked in for today!');
-      if (onRefresh) onRefresh();
-    } catch {
-      setSuccessMsg('Check-in recorded locally.');
-    } finally {
-      setLoading(false);
-      setLocationStatus('');
-      setTimeout(() => setSuccessMsg(''), 4000);
-    }
-  };
-
-  const handleClockOut = async () => {
-    setLoading(true);
-    try {
-      await hrApi.clockOut({
-        location: 'GPS: 18.5204° N, 73.8567° E',
-        photo: 'selfie_checkout.jpg'
-      });
-      setSuccessMsg('Checked out successfully!');
-      if (onRefresh) onRefresh();
-    } catch {
-      setSuccessMsg('Clock out completed.');
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccessMsg(''), 4000);
-    }
-  };
+  const activeWorkingCount = attendanceRecords.filter((r) => r.status === 'Working' || (r.isActive && !r.checkOut)).length;
+  const completedTodayCount = attendanceRecords.filter((r) => r.status === 'Present' || !!r.checkOut).length;
 
   return (
     <div className="space-y-6 font-body text-xs">
@@ -90,147 +49,150 @@ export const AdminAttendance: React.FC<AdminAttendanceProps> = ({
         <div>
           <h1 className="text-2xl font-light text-[#161616]">Human Resources & Field Staff Attendance</h1>
           <p className="text-xs text-[#525252] mt-0.5">
-            Field officer check-ins, monthly compliance, selfie photo proofs, GPS location tracking, and working hours
+            Field staff check-ins, active work shifts, working hours, and real-time location logs.
           </p>
         </div>
 
-        {isDistributor && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleClockIn}
-              disabled={loading}
-              className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">location_on</span>
-              {loading ? 'Recording...' : 'Start Day (Check-In)'}
-            </button>
-            <button
-              onClick={handleClockOut}
-              disabled={loading}
-              className="px-4 py-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-              End Day (Check-Out)
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="px-3 py-1.5 bg-[#f4f4f4] hover:bg-[#e0e0e0] text-[#161616] border border-[#cbd5e1] font-bold text-xs rounded shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-[16px] ${isRefreshing ? 'animate-spin' : ''}`}>
+              sync
+            </span>
+            {isRefreshing ? 'Syncing...' : 'Sync Live Data'}
+          </button>
+        </div>
       </div>
 
-      {locationStatus && (
-        <div className="p-3 bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd] rounded text-xs font-semibold flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px] animate-spin">sync</span>
-          {locationStatus}
+      {/* KPI Overview Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 bg-white border border-[#e0e0e0] border-l-4 border-l-[#16a34a] rounded shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-[#525252]">Active / Working Now</span>
+          <div className="text-xl font-bold text-[#15803d] mt-1 flex items-center gap-2">
+            <span>{activeWorkingCount}</span>
+            {activeWorkingCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse" />
+            )}
+          </div>
         </div>
-      )}
 
-      {successMsg && (
-        <div className="p-3 bg-[#dcfce7] text-[#15803d] border border-[#86efac] rounded text-xs font-bold flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {successMsg}
+        <div className="p-3.5 bg-white border border-[#e0e0e0] border-l-4 border-l-[#0f62fe] rounded shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-[#525252]">Completed Today</span>
+          <div className="text-xl font-bold text-[#0f62fe] mt-1">{completedTodayCount}</div>
         </div>
-      )}
 
-      {/* Attendance Matrix Table */}
+        <div className="p-3.5 bg-white border border-[#e0e0e0] border-l-4 border-l-[#ca8a04] rounded shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-[#525252]">Total Records</span>
+          <div className="text-xl font-bold text-[#161616] mt-1">{attendanceRecords.length}</div>
+        </div>
+
+        <div className="p-3.5 bg-white border border-[#e0e0e0] border-l-4 border-l-[#64748b] rounded shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-[#525252]">Server Sync Status</span>
+          <div className="text-xs font-bold text-[#15803d] mt-2 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
+            Live Connected
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Controls */}
+      <div className="bg-white p-3 border border-[#e0e0e0] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+        <div className="w-full sm:w-72">
+          <input
+            type="text"
+            placeholder="Search employee, date, location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-1.5 bg-[#f4f4f4] border border-[#e0e0e0] rounded text-xs focus:outline-none focus:border-[#0f62fe]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-semibold text-[#525252]">Status:</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-2.5 py-1.5 bg-[#f4f4f4] border border-[#e0e0e0] rounded text-xs font-bold text-[#161616] focus:outline-none"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Working">Working</option>
+            <option value="Present">Present</option>
+            <option value="Late">Late</option>
+            <option value="Absent">Absent</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Real-time Attendance Matrix Table */}
       <div className="bg-white border border-[#e0e0e0] overflow-x-auto shadow-xs">
         <table className="w-full text-left text-xs whitespace-nowrap">
           <thead className="bg-[#f4f4f4] text-[#525252] border-b border-[#e0e0e0] uppercase text-[11px] tracking-wider">
             <tr>
               <th className="p-3 font-semibold">Date</th>
-              <th className="p-3 font-semibold">Day</th>
               <th className="p-3 font-semibold">Employee</th>
-              <th className="p-3 font-semibold text-center">Login Proof</th>
-              <th className="p-3 font-semibold text-center">Logout Proof</th>
-              <th className="p-3 font-semibold">Check In</th>
-              <th className="p-3 font-semibold">Check Out</th>
-              <th className="p-3 font-semibold text-right">Break</th>
-              <th className="p-3 font-semibold text-right">Total Hours</th>
-              <th className="p-3 font-semibold text-right">Overtime</th>
+              <th className="p-3 font-semibold">Role</th>
+              <th className="p-3 font-semibold">Login Time</th>
+              <th className="p-3 font-semibold">Logout Time</th>
+              <th className="p-3 font-semibold text-right">Working Hours</th>
+              <th className="p-3 font-semibold">Current / Latest Location</th>
               <th className="p-3 font-semibold">Status</th>
+              <th className="p-3 font-semibold text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e0e0e0]">
-            {(attendanceRecords || []).map((att) => (
-              <tr key={att.id} className="hover:bg-[#f4f4f4]">
-                <td className="p-3 font-bold text-[#161616]">{att.date}</td>
-                <td className="p-3 text-[#525252]">{att.day}</td>
+            {filtered.map((att) => (
+              <tr key={att.id} className="hover:bg-[#f8f9fa] transition-colors">
+                <td className="p-3 font-bold text-[#161616]">
+                  {att.date} <span className="text-[10px] font-normal text-[#525252]">({att.day})</span>
+                </td>
                 <td className="p-3 font-bold text-[#0f62fe]">{att.employeeName}</td>
-
-                {/* Login Proof Cell */}
-                <td className="p-3 text-center">
-                  {att.loginImage ? (
-                    <button
-                      onClick={() =>
-                        setProofModalState({
-                          isOpen: true,
-                          title: 'Login Check-In Proof Photo',
-                          imageUrl: att.loginImage,
-                          employeeName: att.employeeName,
-                          date: att.date,
-                          time: att.checkIn,
-                          status: att.status,
-                          details: {
-                            Location: att.locationCheckIn || 'GPS Recorded',
-                            Role: att.role,
-                          },
-                        })
-                      }
-                      className="p-0.5 bg-[#f0fdf4] border border-[#86efac] rounded hover:opacity-85 cursor-pointer inline-block"
-                      title="Click to view login photo proof"
-                    >
-                      <img src={att.loginImage} alt="Login Proof" className="w-8 h-8 object-cover rounded" />
-                    </button>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-[#f1f5f9] text-[#94a3b8] text-[10px] font-bold rounded">
-                      No Photo
-                    </span>
-                  )}
+                <td className="p-3 text-[#525252]">{att.role}</td>
+                <td className="p-3 font-mono text-[#161616] font-semibold">{att.checkIn || '--'}</td>
+                <td className="p-3 font-mono text-[#161616] font-semibold">{att.checkOut || '--'}</td>
+                <td className="p-3 text-right font-bold text-[#161616]">
+                  {att.workingHours || att.totalHours || '--'}
                 </td>
-
-                {/* Logout Proof Cell */}
-                <td className="p-3 text-center">
-                  {att.logoutImage ? (
-                    <button
-                      onClick={() =>
-                        setProofModalState({
-                          isOpen: true,
-                          title: 'Logout Check-Out Proof Photo',
-                          imageUrl: att.logoutImage,
-                          employeeName: att.employeeName,
-                          date: att.date,
-                          time: att.checkOut,
-                          status: att.status,
-                          details: {
-                            Location: att.locationCheckOut || 'GPS Recorded',
-                            Role: att.role,
-                          },
-                        })
-                      }
-                      className="p-0.5 bg-[#f0fdf4] border border-[#86efac] rounded hover:opacity-85 cursor-pointer inline-block"
-                      title="Click to view logout photo proof"
-                    >
-                      <img src={att.logoutImage} alt="Logout Proof" className="w-8 h-8 object-cover rounded" />
-                    </button>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-[#f1f5f9] text-[#94a3b8] text-[10px] font-bold rounded">
-                      No Photo
-                    </span>
-                  )}
+                <td className="p-3 text-[#525252] max-w-[220px] truncate">
+                  {att.currentLocation || att.locationCheckIn || 'Recorded'}
                 </td>
-
-                <td className="p-3 font-mono text-[#161616]">{att.checkIn}</td>
-                <td className="p-3 font-mono text-[#161616]">{att.checkOut}</td>
-                <td className="p-3 text-right text-[#525252]">{att.breakDuration || '--'}</td>
-                <td className="p-3 text-right font-bold text-[#161616]">{att.workingHours || att.totalHours || '--'}</td>
-                <td className="p-3 text-right text-[#0f62fe] font-semibold">{att.overtime || '-'}</td>
                 <td className="p-3">
-                  <StatusBadge status={att.status} />
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      att.status === 'Working'
+                        ? 'bg-[#dbeafe] text-[#1e40af] border border-[#93c5fd] flex items-center gap-1 w-max'
+                        : att.status === 'Present'
+                        ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
+                        : att.status === 'Absent'
+                        ? 'bg-[#fee2e2] text-[#991b1b] border border-[#fca5a5]'
+                        : 'bg-[#fef9c3] text-[#854d0e] border border-[#fde047]'
+                    }`}
+                  >
+                    {att.status === 'Working' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-pulse" />
+                    )}
+                    {att.status}
+                  </span>
+                </td>
+                <td className="p-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRecord(att)}
+                    className="px-2.5 py-1 bg-white hover:bg-[#f4f4f4] text-[#161616] border border-[#cbd5e1] rounded font-bold text-[11px] shadow-2xs cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px] text-[#525252]">visibility</span>
+                    Details
+                  </button>
                 </td>
               </tr>
             ))}
-            {attendanceRecords.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
-                <td colSpan={11} className="p-8 text-center text-[#64748b]">
-                  No attendance records found for the selected period.
+                <td colSpan={9} className="p-8 text-center text-[#64748b]">
+                  No attendance records found for the selected filter.
                 </td>
               </tr>
             )}
@@ -238,17 +200,11 @@ export const AdminAttendance: React.FC<AdminAttendanceProps> = ({
         </table>
       </div>
 
-      {/* Global Image Proof Viewer Modal */}
-      <ImageProofModal
-        isOpen={proofModalState.isOpen}
-        onClose={() => setProofModalState({ ...proofModalState, isOpen: false })}
-        title={proofModalState.title}
-        imageUrl={proofModalState.imageUrl}
-        employeeName={proofModalState.employeeName}
-        date={proofModalState.date}
-        time={proofModalState.time}
-        status={proofModalState.status}
-        details={proofModalState.details}
+      {/* Record Details Modal */}
+      <AttendanceDetailModal
+        isOpen={Boolean(selectedRecord)}
+        onClose={() => setSelectedRecord(null)}
+        record={selectedRecord}
       />
     </div>
   );

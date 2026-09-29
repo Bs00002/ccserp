@@ -8,6 +8,7 @@ from apps.accounts.models import UserRole
 from apps.products.models import Product
 from .models import Order, OrderItem, OrderStatus
 from .serializers import OrderSerializer, OrderItemSerializer
+from apps.common.events import broadcast_erp_event
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -18,8 +19,17 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Order.objects.select_related('dealer', 'created_by').prefetch_related('items__product').order_by('-created_at')
-        if user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.WAREHOUSE]:
+        if user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
             return qs
+        elif user.role == UserRole.WAREHOUSE:
+            if self.action in ['generate_lr', 'dispatch_order', 'dispatch_details']:
+                return qs
+            return qs.filter(status__in=[
+                OrderStatus.READY_DISPATCH,
+                OrderStatus.BILTY_UPLOADED,
+                OrderStatus.DISPATCHED,
+                OrderStatus.DELIVERED
+            ])
         elif user.role == UserRole.DEALER:
             return qs.filter(dealer=user)
         else: # Distributor / Employee
@@ -92,6 +102,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.save()
         
         serializer = self.get_serializer(order)
+        broadcast_erp_event(
+            event_type='order.created',
+            payload=serializer.data,
+            target_roles=['Admin'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
@@ -122,6 +138,20 @@ class OrderViewSet(viewsets.ModelViewSet):
             created_by=request.user
         )
 
+        broadcast_erp_event(
+            event_type='order.approved',
+            payload={
+                "id": str(order.id),
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "status": order.status,
+                "dealer_id": str(order.dealer_id),
+                "created_by_id": str(order.created_by_id) if order.created_by_id else None
+            },
+            target_roles=['Admin', 'Distributor'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
+
         return Response({"message": "Order approved successfully and inventory updated.", "status": order.status})
 
     @action(detail=True, methods=['post'])
@@ -144,16 +174,29 @@ class OrderViewSet(viewsets.ModelViewSet):
             created_by=request.user
         )
 
+        broadcast_erp_event(
+            event_type='order.updated',
+            payload={
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "status": order.status,
+                "dealer_id": str(order.dealer_id),
+                "created_by_id": str(order.created_by_id) if order.created_by_id else None
+            },
+            target_roles=['Admin'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
+
         return Response({"message": "Order rejected by Admin.", "status": order.status})
 
     @action(detail=True, methods=['post'])
     def upload_bilty(self, request, pk=None):
         if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
-            return Response({"error": "Unauthorized. Only Admin/Office can upload Bilty."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Unauthorized. Only Admin can generate/upload Bilty."}, status=status.HTTP_403_FORBIDDEN)
             
         order = self.get_object()
-        if order.status not in [OrderStatus.APPROVED, OrderStatus.BILTY_UPLOADED]:
-            return Response({"error": "Bilty can only be uploaded for Approved orders."}, status=status.HTTP_400_BAD_REQUEST)
+        if order.status not in [OrderStatus.APPROVED, OrderStatus.BILTY_UPLOADED, OrderStatus.READY_DISPATCH]:
+            return Response({"error": f"Bilty can only be generated for Approved orders (Current status: {order.status})."}, status=status.HTTP_400_BAD_REQUEST)
             
         from django.utils import timezone
         order.bilty_number = request.data.get('bilty_number', order.bilty_number or f"BILTY-{order.order_number}")
@@ -161,6 +204,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.bilty_pdf = request.FILES['bilty_pdf']
         order.bilty_date = timezone.now()
         order.bilty_uploaded_by = request.user
+        # Admin generates Bilty -> order becomes BILTY_UPLOADED
         order.status = OrderStatus.BILTY_UPLOADED
         order.save()
 
@@ -168,21 +212,41 @@ class OrderViewSet(viewsets.ModelViewSet):
         OrderTimeline.objects.create(
             order=order,
             status=OrderStatus.BILTY_UPLOADED,
-            remarks=f"Office Bilty uploaded: {order.bilty_number}",
+            remarks=f"Admin Bilty generated: {order.bilty_number}. Office stage complete.",
             created_by=request.user
         )
 
-        return Response({"message": "Bilty PDF and details uploaded successfully.", "status": order.status, "bilty_number": order.bilty_number})
+        broadcast_erp_event(
+            event_type='order.bilty_created',
+            payload={
+                "id": str(order.id),
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "bilty_number": order.bilty_number,
+                "status": order.status,
+                "dealer_id": str(order.dealer_id),
+                "created_by_id": str(order.created_by_id) if order.created_by_id else None
+            },
+            target_roles=['Admin', 'Warehouse'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
+
+        return Response({
+            "message": "Bilty generated successfully. Order is now Ready to Dispatch.",
+            "status": order.status,
+            "bilty_number": order.bilty_number
+        })
+
+    @action(detail=True, methods=['post'])
+    def generate_bilty(self, request, pk=None):
+        return self.upload_bilty(request, pk)
 
     @action(detail=True, methods=['post'])
     def mark_ready_dispatch(self, request, pk=None):
         if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
-            return Response({"error": "Unauthorized. Only Admin/Office can set Ready to Dispatch."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Unauthorized. Only Admin can set Ready to Dispatch."}, status=status.HTTP_403_FORBIDDEN)
             
         order = self.get_object()
-        if order.status != OrderStatus.BILTY_UPLOADED:
-            return Response({"error": "Order must have Bilty uploaded (status: Bilty Uploaded) before setting Ready to Dispatch."}, status=status.HTTP_400_BAD_REQUEST)
-            
         order.status = OrderStatus.READY_DISPATCH
         order.save()
 
@@ -190,7 +254,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         OrderTimeline.objects.create(
             order=order,
             status=OrderStatus.READY_DISPATCH,
-            remarks="Order marked Ready to Dispatch by Office",
+            remarks="Order marked Ready to Dispatch by Admin",
             created_by=request.user
         )
 
@@ -198,6 +262,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def generate_lr(self, request, pk=None):
+        if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.WAREHOUSE]:
+            return Response({"error": "Unauthorized. Only Warehouse or Admin can generate LR."}, status=status.HTTP_403_FORBIDDEN)
+            
         order = self.get_object()
         
         # LOCKED CHECK: LR Generation is locked before Ready to Dispatch stage!
@@ -215,6 +282,69 @@ class OrderViewSet(viewsets.ModelViewSet):
             
         order.lr_date = timezone.now()
         order.lr_generated_by = request.user
+        # STRICT BUSINESS RULE: LR creation/upload MUST NOT automatically dispatch the order!
+        order.status = OrderStatus.READY_DISPATCH
+        order.save()
+        
+        from .models import OrderTimeline
+        OrderTimeline.objects.create(
+            order=order,
+            status=OrderStatus.READY_DISPATCH,
+            remarks=f"Warehouse LR Generated: {order.lr_number} via {order.transport_details} (Vehicle: {order.vehicle_number}). Awaiting authorized dispatch.",
+            created_by=request.user
+        )
+        
+        broadcast_erp_event(
+            event_type='order.lr_created',
+            payload={
+                "id": str(order.id),
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "lr_number": order.lr_number,
+                "status": order.status,
+                "transport_details": order.transport_details,
+                "vehicle_number": order.vehicle_number,
+                "dealer_id": str(order.dealer_id),
+                "created_by_id": str(order.created_by_id) if order.created_by_id else None
+            },
+            target_roles=['Admin', 'Warehouse', 'Distributor'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
+
+        return Response({
+            "message": "LR Generated successfully. Ready for final authorized dispatch.",
+            "status": order.status,
+            "lr_number": order.lr_number,
+            "transport_details": order.transport_details,
+            "vehicle_number": order.vehicle_number
+        })
+
+    @action(detail=True, methods=['post'])
+    def dispatch_details(self, request, pk=None):
+        return self.generate_lr(request, pk)
+
+    @action(detail=True, methods=['post'])
+    def dispatch_order(self, request, pk=None):
+        if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.WAREHOUSE]:
+            return Response({"error": "Unauthorized. Only Warehouse or Admin can perform order dispatch."}, status=status.HTTP_403_FORBIDDEN)
+            
+        order = self.get_object()
+        if order.status != OrderStatus.READY_DISPATCH:
+            return Response({"error": f"Order cannot be dispatched. Status must be 'Ready to Dispatch' (Current: {order.status})."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        lr_num = request.data.get('lr_number') or order.lr_number
+        if not lr_num:
+            return Response({"error": "Cannot dispatch order without LR details. Please generate LR first."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if request.data.get('lr_number'):
+            order.lr_number = request.data.get('lr_number')
+        if request.data.get('transport_details'):
+            order.transport_details = request.data.get('transport_details')
+        if request.data.get('vehicle_number'):
+            order.vehicle_number = request.data.get('vehicle_number')
+        if 'lr_receipt_upload' in request.FILES:
+            order.lr_receipt_upload = request.FILES['lr_receipt_upload']
+
         order.status = OrderStatus.DISPATCHED
         order.save()
         
@@ -222,11 +352,50 @@ class OrderViewSet(viewsets.ModelViewSet):
         OrderTimeline.objects.create(
             order=order,
             status=OrderStatus.DISPATCHED,
-            remarks=f"Warehouse LR Generated: {order.lr_number} via {order.transport_details}",
+            remarks=f"Order Dispatched by {request.user.role} ({request.user.username}) with LR: {order.lr_number}",
             created_by=request.user
         )
         
-        return Response({"message": "LR Generated successfully and order Dispatched.", "status": order.status, "lr_number": order.lr_number})
+        broadcast_erp_event(
+            event_type='order.dispatched',
+            payload={
+                "id": str(order.id),
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "lr_number": order.lr_number,
+                "status": order.status,
+                "dealer_id": str(order.dealer_id),
+                "created_by_id": str(order.created_by_id) if order.created_by_id else None
+            },
+            target_roles=['Admin', 'Warehouse', 'Distributor'],
+            target_user_ids=[str(order.dealer_id), str(order.created_by_id) if order.created_by_id else None]
+        )
+
+        return Response({
+            "message": "Order successfully marked as Dispatched.",
+            "status": order.status,
+            "lr_number": order.lr_number
+        })
+
+    @action(detail=True, methods=['post'], url_path='dispatch')
+    def perform_dispatch(self, request, pk=None):
+        return self.dispatch_order(request, pk)
+
+    @action(detail=True, methods=['post'])
+    def update_status(self, request, pk=None):
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({"error": "Missing status parameter."}, status=status.HTTP_400_BAD_REQUEST)
+        if new_status == OrderStatus.APPROVED:
+            return self.approve(request, pk)
+        elif new_status == OrderStatus.REJECTED:
+            return self.reject(request, pk)
+        elif new_status in [OrderStatus.READY_DISPATCH, 'Ready Dispatch', OrderStatus.BILTY_UPLOADED]:
+            return self.upload_bilty(request, pk)
+        elif new_status == OrderStatus.DISPATCHED:
+            return self.dispatch_order(request, pk)
+        else:
+            return Response({"error": f"Unsupported or restricted status transition to '{new_status}'."}, status=status.HTTP_400_BAD_REQUEST)
         
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):
@@ -246,9 +415,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
-            return Invoice.objects.all().order_by('-created_at')
+            return Invoice.objects.all().order_by('-generated_at')
         elif user.role == UserRole.DEALER:
-            return Invoice.objects.filter(order__dealer=user).order_by('-created_at')
+            return Invoice.objects.filter(order__dealer=user).order_by('-generated_at')
         return Invoice.objects.none()
         
     @action(detail=True, methods=['get'])

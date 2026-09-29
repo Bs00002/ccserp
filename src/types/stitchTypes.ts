@@ -19,6 +19,8 @@ export type OrderStatus =
   | 'Pending Approval'
   | 'Approved'
   | 'Processing'
+  | 'Ready to Dispatch'
+  | 'Ready Dispatch'
   | 'Dispatched'
   | 'In Transit'
   | 'Delivered'
@@ -100,6 +102,8 @@ export interface Distributor {
   state: string;
   dealersCount: number;
   monthlySales: number;
+  monthlySalesPlan?: number;
+  monthlyCollectionPlan?: number;
   outstandingBalance: number;
   status: 'Active' | 'Inactive';
 }

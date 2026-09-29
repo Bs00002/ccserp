@@ -28,7 +28,6 @@ import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
 
 import MainCard from 'components/MainCard';
-import { orders, formatINR } from 'data/ccsMock';
 
 import ArrowLeftOutlined from '@ant-design/icons/ArrowLeftOutlined';
 import PrinterOutlined from '@ant-design/icons/PrinterOutlined';
@@ -73,15 +72,104 @@ const statusColorMap = {
   'Cancelled': 'error'
 };
 
+import api from 'api/client';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import { useParams, useNavigate } from 'react-router-dom';
+
+const formatINR = (val) => {
+  const num = Number(val) || 0;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+};
+
 export default function OrderDetailPage() {
-  const order = orders.find(o => o.status === 'Approved' || o.status === 'Packing') || orders[15];
-  const currentStepIdx = Math.max(0, STEPS.indexOf(order.status));
-  const [activeStep, setActiveStep] = useState(currentStepIdx < STEPS.length - 1 ? currentStepIdx : currentStepIdx);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
   const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let ord = null;
+        if (id) {
+          const res = await api.get(`/orders/orders/${id}/`);
+          ord = res.data;
+        } else {
+          const listRes = await api.get('/orders/orders/');
+          const list = Array.isArray(listRes.data) ? listRes.data : [];
+          if (list.length > 0) ord = list[0];
+        }
+
+        if (!ord) {
+          setError('Order record not found.');
+          setOrder(null);
+          return;
+        }
+
+        const mapped = {
+          id: String(ord.id),
+          orderNo: ord.order_number || `ORD-${ord.id}`,
+          status: ord.status || 'Pending Approval',
+          createdAt: ord.created_at ? ord.created_at.split('T')[0] : '—',
+          dealerName: ord.dealer_name || 'Dealer',
+          shopName: ord.dealer_name || 'Agro Shop',
+          employeeName: ord.created_by_name || 'Staff',
+          subtotal: parseFloat(ord.subtotal || ord.total_amount || 0),
+          taxAmount: parseFloat(ord.tax || Math.round(parseFloat(ord.total_amount || 0) * 0.18)),
+          grandTotal: parseFloat(ord.total_amount || ord.grand_total || 0),
+          gstAmount: parseFloat(ord.tax || Math.round(parseFloat(ord.total_amount || 0) * 0.18)),
+          comments: ord.remarks || '',
+          items: (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => ({
+            productName: i.product_name || 'Agri Product',
+            sku: i.product_sku || 'SKU',
+            packSize: i.pack_size || '1 Ltr',
+            quantity: i.quantity || 1,
+            unitPrice: parseFloat(i.rate || i.unit_price || 0),
+            total: parseFloat(i.total || 0)
+          })) : []
+        };
+
+        setOrder(mapped);
+        const idx = STEPS.indexOf(mapped.status);
+        setActiveStep(idx >= 0 ? idx : 0);
+      } catch (err) {
+        console.error('Failed to load order detail:', err);
+        setError('Failed to load order from database.');
+        setOrder(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrder();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <Box sx={{ p: 4, maxWidth: 600, mx: 'auto', textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mb: 3 }}>{error || 'Order not found.'}</Alert>
+        <Button variant="contained" onClick={() => navigate('/admin/orders')}>
+          Back to Orders
+        </Button>
+      </Box>
+    );
+  }
 
   const nextActionLabel = STEPS[Math.min(activeStep + 1, STEPS.length - 1)];
   const canAdvance = activeStep < STEPS.length - 1;
-
   const gstSplit = Math.round(order.gstAmount / 2);
 
   return (

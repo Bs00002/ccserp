@@ -8,13 +8,12 @@ interface OrderTimelineProps {
 }
 
 const STAGES: { key: OrderStatus; label: string; icon: string }[] = [
-  { key: 'Draft', label: 'Order Drafted', icon: 'edit_note' },
-  { key: 'Submitted', label: 'Submitted', icon: 'send' },
-  { key: 'Pending Approval', label: 'Pending Approval', icon: 'pending_actions' },
-  { key: 'Approved', label: 'Approved', icon: 'check_circle' },
-  { key: 'Processing', label: 'Warehouse Processing', icon: 'inventory' },
-  { key: 'Dispatched', label: 'Dispatched / In Transit', icon: 'local_shipping' },
-  { key: 'Delivered', label: 'Delivered', icon: 'task_alt' },
+  { key: 'Pending Approval', label: '1. Employee Order', icon: 'pending_actions' },
+  { key: 'Approved', label: '2. Admin Approved', icon: 'check_circle' },
+  { key: 'Bilty Uploaded', label: '3. Office Bilty Uploaded', icon: 'description' },
+  { key: 'Ready to Dispatch', label: '4. Ready to Dispatch', icon: 'inventory_2' },
+  { key: 'Dispatched', label: '5. Warehouse LR & Dispatch', icon: 'local_shipping' },
+  { key: 'Delivered', label: '6. Delivered', icon: 'task_alt' },
 ];
 
 export const OrderTimeline: React.FC<OrderTimelineProps> = ({ currentStatus }) => {
@@ -23,20 +22,20 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ currentStatus }) =
   const getStageIndex = (status: OrderStatus) => {
     switch (status) {
       case 'Draft':
-        return 0;
       case 'Submitted':
-        return 1;
       case 'Pending Approval':
-        return 2;
+        return 0;
       case 'Approved':
+        return 1;
+      case 'Bilty Uploaded':
+        return 2;
+      case 'Ready to Dispatch':
         return 3;
-      case 'Processing':
-        return 4;
       case 'Dispatched':
       case 'In Transit':
-        return 5;
+        return 4;
       case 'Delivered':
-        return 6;
+        return 5;
       default:
         return 0;
     }

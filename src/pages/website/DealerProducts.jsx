@@ -3,7 +3,7 @@ import { Box, Typography, Stack, List, ListItemButton, ListItemText, Divider, Te
 import MasterDetailLayout from 'components/ui/MasterDetailLayout';
 import { SearchOutlined, AppstoreOutlined } from '@ant-design/icons';
 import api from 'api/client';
-import { formatINR } from 'data/ccsMock';
+import { formatINR, products as mockProducts } from 'data/ccsMock';
 import MainCard from 'components/MainCard';
 
 export default function DealerProducts() {
@@ -16,10 +16,13 @@ export default function DealerProducts() {
     const fetchProducts = async () => {
       try {
         const res = await api.get('/products/products/');
-        setData(res.data);
-        if (res.data.length > 0) setSelectedId(res.data[0].id);
+        const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.results) ? res.data.results : mockProducts);
+        setData(list);
+        if (list.length > 0) setSelectedId(list[0].id);
       } catch (err) {
         console.error(err);
+        setData(mockProducts);
+        if (mockProducts.length > 0) setSelectedId(mockProducts[0].id);
       } finally {
         setLoading(false);
       }
@@ -27,14 +30,16 @@ export default function DealerProducts() {
     fetchProducts();
   }, []);
 
-  const filteredProducts = useMemo(() => {
-    return data.filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [data, search]);
+  const safeData = Array.isArray(data) ? data : [];
 
-  const selectedProduct = data.find(p => p.id === selectedId);
+  const filteredProducts = useMemo(() => {
+    return safeData.filter(p => 
+      p.name?.toLowerCase().includes(search.toLowerCase()) ||
+      (p.category || p.category_name || '')?.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [safeData, search]);
+
+  const selectedProduct = safeData.find(p => p.id === selectedId);
 
   const masterContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

@@ -62,7 +62,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto">
-            {['ALL', 'Submitted', 'Processing', 'Dispatched', 'Delivered', 'Cancelled'].map((st) => (
+            {['ALL', 'Pending Approval', 'Approved', 'Bilty Uploaded', 'Ready to Dispatch', 'Dispatched', 'Delivered', 'Rejected'].map((st) => (
               <button
                 key={st}
                 onClick={() => setSelectedStatus(st)}
@@ -93,8 +93,8 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
             <tr>
               <th className="p-3 font-semibold">Order ID</th>
               <th className="p-3 font-semibold">Date</th>
-              <th className="p-3 font-semibold">Dealer Name</th>
-              <th className="p-3 font-semibold">Distributor</th>
+              <th className="p-3 font-semibold">Distributor Name</th>
+              <th className="p-3 font-semibold">Created By</th>
               <th className="p-3 font-semibold text-right">Items</th>
               <th className="p-3 font-semibold text-right">Amount</th>
               <th className="p-3 font-semibold">Status</th>
@@ -148,11 +148,13 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
                         onChange={(e) => onUpdateStatus && onUpdateStatus(ord.id, e.target.value as OrderStatus)}
                         className="bg-[#f4f4f4] border border-[#e0e0e0] text-[10px] font-semibold text-[#161616] p-1 focus:outline-none"
                       >
-                        <option value="Submitted">Submitted</option>
+                        <option value="Pending Approval">Pending Approval</option>
                         <option value="Approved">Approved</option>
-                        <option value="Processing">Processing</option>
+                        <option value="Bilty Uploaded">Bilty Uploaded</option>
+                        <option value="Ready to Dispatch">Ready to Dispatch</option>
                         <option value="Dispatched">Dispatched</option>
                         <option value="Delivered">Delivered</option>
+                        <option value="Rejected">Rejected</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
                     </div>

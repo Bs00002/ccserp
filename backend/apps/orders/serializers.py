@@ -4,6 +4,14 @@ from apps.products.serializers import ProductSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
+    product_code = serializers.SerializerMethodField()
+    pack_size = serializers.CharField(source='product.pack_size', read_only=True)
+    packing = serializers.CharField(source='product.packing', read_only=True)
+
+    def get_product_code(self, obj):
+        if not obj.product:
+            return "PRD-01"
+        return getattr(obj.product, 'code', None) or getattr(obj.product, 'barcode', None) or f"PRD-{str(obj.product.id)[:6].upper()}"
     
     class Meta:
         model = OrderItem
@@ -33,6 +41,33 @@ class OrderTimelineSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InvoiceSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    dealer_id = serializers.UUIDField(source='order.dealer.id', read_only=True)
+    dealer = serializers.CharField(source='order.dealer.username', read_only=True)
+    dealer_name = serializers.SerializerMethodField()
+    total_amount = serializers.DecimalField(source='order.grand_total', max_digits=12, decimal_places=2, read_only=True)
+    balance_due = serializers.SerializerMethodField()
+    status = serializers.CharField(source='order.payment_status', read_only=True)
+    lr_number = serializers.CharField(source='order.lr_number', read_only=True)
+    bilty_no = serializers.CharField(source='order.bilty_number', read_only=True)
+    created_at = serializers.DateTimeField(source='generated_at', read_only=True)
+
+    def get_dealer_name(self, obj):
+        dealer = getattr(obj.order, 'dealer', None) if obj.order else None
+        if not dealer:
+            return "N/A"
+        profile = getattr(dealer, 'dealer_profile', None)
+        if profile and getattr(profile, 'company_name', None):
+            return profile.company_name
+        return dealer.get_full_name() or dealer.username
+
+    def get_balance_due(self, obj):
+        if not obj.order:
+            return 0.00
+        if getattr(obj.order, 'payment_status', '') == 'Paid':
+            return 0.00
+        return float(obj.order.grand_total or 0.00)
+
     class Meta:
         model = Invoice
         fields = '__all__'

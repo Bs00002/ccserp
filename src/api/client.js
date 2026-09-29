@@ -1,10 +1,21 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_APP_API_URL || 'http://localhost:8000/api';
+const DEFAULT_PROD_API = 'https://acid-everywhere-equation-network.trycloudflare.com/api';
+
+const isNativeApp = typeof window !== 'undefined' && (
+  window.location.protocol === 'capacitor:' || 
+  Boolean(window.Capacitor?.isNativePlatform?.()) ||
+  (window.location.hostname === 'localhost' && !import.meta.env.DEV)
+);
+
+const API_URL = 
+  import.meta.env.VITE_API_URL || 
+  import.meta.env.VITE_APP_API_URL || 
+  (isNativeApp ? DEFAULT_PROD_API : (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api'));
 
 const client = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // Important for HttpOnly cookies
+  withCredentials: true,
 });
 
 // Interceptor to attach access token
@@ -24,34 +35,29 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const currentToken = localStorage.getItem('access_token');
-
-    // If using mock token for demo, bypass token refresh auto-logout
-    if (currentToken && currentToken.startsWith('mock-')) {
-      return Promise.reject(error);
-    }
+    const refreshToken = localStorage.getItem('refresh_token');
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Attempt to refresh the token.
+        const payload = refreshToken ? { refresh: refreshToken } : {};
         const res = await axios.post(
           `${API_URL}/auth/token/refresh/`,
-          {},
+          payload,
           { withCredentials: true }
         );
         const { access } = res.data;
-        localStorage.setItem('access_token', access);
-        client.defaults.headers.common['Authorization'] = `Bearer ${access}`;
-        return client(originalRequest);
-      } catch (err) {
-        // Refresh failed, clear session only if not in demo/mock mode
-        const tokenCheck = localStorage.getItem('access_token');
-        if (!tokenCheck || !tokenCheck.startsWith('mock-')) {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+        if (access) {
+          localStorage.setItem('access_token', access);
+          client.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+          originalRequest.headers['Authorization'] = `Bearer ${access}`;
+          return client(originalRequest);
         }
+      } catch (err) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
         return Promise.reject(err);
       }
     }
@@ -59,5 +65,6 @@ client.interceptors.response.use(
   }
 );
 
+export { API_URL };
 export default client;
 

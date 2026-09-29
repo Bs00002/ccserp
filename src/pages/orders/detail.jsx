@@ -57,7 +57,7 @@ export default function OrderDetail() {
       if (action === 'approve') {
         await api.post(`/orders/orders/${id}/approve/`);
       } else if (action === 'cancel') {
-        await api.post(`/orders/orders/${id}/cancel/`);
+        await api.post(`/orders/orders/${id}/reject/`);
       } else {
         await api.post(`/orders/orders/${id}/update_status/`, { status: action });
       }
@@ -69,11 +69,26 @@ export default function OrderDetail() {
       setActionLoading(false);
     }
   };
+
+  const handleGenerateBilty = async () => {
+    setActionLoading(true);
+    try {
+      await api.post(`/orders/orders/${id}/generate_bilty/`, {
+        bilty_number: `BILTY-${order.order_number}`
+      });
+      fetchOrder();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Failed to generate Bilty');
+    } finally {
+      setActionLoading(false);
+    }
+  };
   
   const handleDispatch = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/orders/orders/${id}/dispatch_details/`, {
+      await api.post(`/orders/orders/${id}/generate_lr/`, {
         transport_details: transportDetails,
         lr_number: lrNumber
       });
@@ -90,8 +105,9 @@ export default function OrderDetail() {
   if (!order) return <Typography>Loading...</Typography>;
 
   const isAdmin = ['Super Admin', 'Admin'].includes(user.role);
-  const isPending = order.status === 'Pending';
+  const isPending = order.status === 'Pending' || order.status === 'Pending Approval';
   const isApproved = order.status === 'Approved';
+  const isReadyDispatch = order.status === 'Ready to Dispatch' || order.status === 'Ready Dispatch';
   const isDispatched = order.status === 'Dispatched';
 
   return (
@@ -120,7 +136,11 @@ export default function OrderDetail() {
             )}
             
             {isAdmin && isApproved && (
-              <Button variant="contained" color="primary" startIcon={<CarOutlined />} onClick={() => setDispatchOpen(true)}>Mark Dispatched</Button>
+              <Button variant="contained" color="secondary" onClick={handleGenerateBilty}>Generate Bilty</Button>
+            )}
+
+            {(isAdmin || user.role === 'Warehouse') && isReadyDispatch && (
+              <Button variant="contained" color="primary" startIcon={<CarOutlined />} onClick={() => navigate('/admin/dispatch')}>Manage Dispatch</Button>
             )}
             
             {isAdmin && isDispatched && (

@@ -15,16 +15,8 @@ interface GlobalSearchModalProps {
   onSelectResult?: (type: string, item: any) => void;
 }
 
-const MOCK_FIELD_STAFF = [
-  { id: 'emp-1', code: 'EMP-789', name: 'Sanjay Deshmukh', designation: 'Senior Sales Executive', territory: 'Pune Division' },
-  { id: 'emp-2', code: 'EMP-452', name: 'Ravi Kumar', designation: 'Field Operations Officer', territory: 'Nashik Region' },
-  { id: 'emp-3', code: 'EMP-619', name: 'Priya Desai', designation: 'Territory Sales Manager', territory: 'Kolhapur Hub' },
-];
-
-const MOCK_REGISTRATIONS = [
-  { id: 'reg-101', applicantName: 'Ramesh Patil', businessName: 'Patil Krishi Seva Kendra', role: 'Dealer', city: 'Satara' },
-  { id: 'reg-102', applicantName: 'Vikram Joshi', businessName: 'Joshi Agro Agencies', role: 'Distributor', city: 'Sangli' },
-];
+const MOCK_FIELD_STAFF: any[] = [];
+const MOCK_REGISTRATIONS: any[] = [];
 
 export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   isOpen,

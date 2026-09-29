@@ -33,8 +33,7 @@ export default function DashboardLayout() {
       <ScrollTop />
       <Header />
       <Drawer />
-
-      <Box component="main" sx={{ width: 'calc(100% - 260px)', flexGrow: 1, p: { xs: 2, sm: 3 } }}>
+      <Box component="main" sx={{ width: { xs: '100%', lg: 'calc(100% - 260px)' }, flexGrow: 1, minWidth: 0, p: { xs: 1.5, sm: 2, md: 3 } }}>
         <Toolbar sx={{ mt: 'inherit' }} />
         <Box
           sx={{

@@ -1,13 +1,17 @@
 import React from 'react';
 import { KpiCard } from '../../components/common/KpiCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { Order, Dealer, User } from '../../types';
+import { Order, Dealer, User, AttendanceRecord } from '../../types';
 import { ChitraLogo } from '../../components/common/ChitraLogo';
 
 interface DistributorDashboardProps {
   currentUser: User;
   orders?: Order[];
   dealers?: Dealer[];
+  activeAttendance?: AttendanceRecord | null;
+  workingDurationStr?: string;
+  onStartDay?: () => void;
+  onEndDay?: () => void;
   onSelectOrder?: (order: Order) => void;
   onCreateOrder?: () => void;
   onTabChange?: (tab: string) => void;
@@ -17,6 +21,10 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
   currentUser,
   orders = [],
   dealers = [],
+  activeAttendance,
+  workingDurationStr = '00h 00m',
+  onStartDay,
+  onEndDay,
   onSelectOrder,
   onCreateOrder,
   onTabChange,
@@ -32,6 +40,9 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
     else if (tab === 'create-order' && onCreateOrder) onCreateOrder();
   };
 
+  const isWorking = Boolean(activeAttendance && activeAttendance.isActive && !activeAttendance.checkOut);
+  const isCompleted = Boolean(activeAttendance && activeAttendance.checkOut);
+
   return (
     <div className="space-y-5 font-body text-xs">
       {/* Salesman Profile & Compact Header */}
@@ -39,24 +50,16 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
         <div className="flex items-center gap-3">
           <ChitraLogo variant="icon" size="md" />
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-[#14532d]">{currentUser.name || 'Sanjay Deshmukh'}</h1>
-              <span className="px-2 py-0.5 bg-[#dcfce7] text-[#14532d] text-[10px] font-bold border border-[#86efac] rounded uppercase">
-                UID: {currentUser.code || 'EMP-789'}
+            <h1 className="text-base font-bold text-[#0f172a]">{currentUser.name}</h1>
+            <p className="text-[#64748b] text-xs">
+              {currentUser.role} • {currentUser.businessName || 'CCS Maharashtra Field Operations'}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="px-2 py-0.5 bg-[#f0fdf4] text-[#15803d] border border-[#86efac] font-bold text-[10px] rounded-full">
+                Active Employee
               </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[#64748b] font-medium mt-1">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-[#16a34a]">phone</span>
-                {currentUser.phone || '+91 98230 45678'}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-[#16a34a]">mail</span>
-                {currentUser.email || 'salesman@chitra.com'}
-              </span>
-              <span className="flex items-center gap-1 text-[#15803d] font-bold">
-                <span className="material-symbols-outlined text-[14px]">location_on</span>
-                {currentUser.territory || 'Pune Sales Division'}
+              <span className="text-[10px] text-[#94a3b8] font-mono">
+                ID: {currentUser.id || 'EMP-104'}
               </span>
             </div>
           </div>
@@ -80,33 +83,109 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
         </div>
       </div>
 
-      {/* Today's Attendance Prominent Card */}
-      <div className="bg-[#f0fdf4] border border-[#86efac] p-4 rounded-lg shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#16a34a] text-white flex items-center justify-center font-bold shadow-2xs">
-            <span className="material-symbols-outlined text-[22px]">event_available</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#14532d] uppercase tracking-wider">TODAY ATTENDANCE STATUS</span>
-              <span className="px-2 py-0.5 bg-[#dcfce7] text-[#14532d] font-extrabold text-[10px] border border-[#86efac] rounded uppercase">
-                RUNNING / PRESENT
+      {/* Today's Attendance Live Status Card (Production Grade) */}
+      <div className="bg-white border border-[#e2e8f0] p-4 rounded-lg shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-white shadow-2xs ${
+                isWorking
+                  ? 'bg-[#16a34a]'
+                  : isCompleted
+                  ? 'bg-[#0f766e]'
+                  : 'bg-[#64748b]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[24px]">
+                {isWorking ? 'schedule' : isCompleted ? 'check_circle' : 'event_available'}
               </span>
             </div>
-            <p className="text-xs font-bold text-[#15803d] mt-0.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px] text-[#16a34a]">schedule</span>
-              Working Since 08:55 AM (GPS Pune Depot Verified)
-            </p>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
+                  TODAY'S ATTENDANCE
+                </span>
+                {isWorking ? (
+                  <span className="px-2 py-0.5 bg-[#dcfce7] text-[#15803d] font-extrabold text-[10px] border border-[#86efac] rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] animate-pulse" />
+                    Working
+                  </span>
+                ) : isCompleted ? (
+                  <span className="px-2 py-0.5 bg-[#ccfbf1] text-[#0f766e] font-extrabold text-[10px] border border-[#5eead4] rounded-full flex items-center gap-1">
+                    ✓ Day Completed
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-[#f1f5f9] text-[#64748b] font-bold text-[10px] border border-[#cbd5e1] rounded-full">
+                    Not Started
+                  </span>
+                )}
+              </div>
+
+              {isWorking ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
+                  <p className="font-bold text-[#0f172a] flex items-center gap-1">
+                    <span className="text-[#64748b] font-normal">Started:</span> {activeAttendance?.checkIn}
+                  </p>
+                  <p className="font-bold text-[#16a34a] flex items-center gap-1">
+                    <span className="text-[#64748b] font-normal">Working:</span> {workingDurationStr}
+                  </p>
+                  <p className="text-[#475569] flex items-center gap-1 font-medium">
+                    <span className="material-symbols-outlined text-[15px] text-[#16a34a]">location_on</span>
+                    {activeAttendance?.currentLocation || activeAttendance?.locationCheckIn || 'Location captured'}
+                  </p>
+                </div>
+              ) : isCompleted ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
+                  <p className="font-bold text-[#0f172a]">
+                    <span className="text-[#64748b] font-normal">Login:</span> {activeAttendance?.checkIn}
+                  </p>
+                  <p className="font-bold text-[#0f172a]">
+                    <span className="text-[#64748b] font-normal">Logout:</span> {activeAttendance?.checkOut}
+                  </p>
+                  <p className="font-bold text-[#0f766e]">
+                    <span className="text-[#64748b] font-normal">Working Hours:</span> {activeAttendance?.workingHours || activeAttendance?.totalHours}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-[#64748b] mt-0.5">
+                  Shift has not started yet today. Capture your check-in selfie to begin your work day.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            {isWorking ? (
+              <button
+                type="button"
+                onClick={onEndDay || (() => handleNav('attendance'))}
+                className="px-4 py-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold text-xs rounded-md shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined text-[18px]">logout</span>
+                End Day (Clock Out)
+              </button>
+            ) : !isCompleted ? (
+              <button
+                type="button"
+                onClick={onStartDay || (() => handleNav('attendance'))}
+                className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs rounded-md shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined text-[18px]">login</span>
+                Start Day (Clock In)
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleNav('attendance')}
+                className="px-3.5 py-2 bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#334155] border border-[#cbd5e1] font-bold text-xs rounded-md shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined text-[18px]">event_note</span>
+                View Attendance
+              </button>
+            )}
           </div>
         </div>
-
-        <button
-          onClick={() => handleNav('attendance')}
-          className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs rounded-md shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-        >
-          <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-          My Attendance & Selfie Proof
-        </button>
       </div>
 
       {/* 6 Clean Quick Action Tiles */}
@@ -206,24 +285,24 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
           label="MONTHLY TURNOVER"
-          value={`₹${(totalSales || 1850000).toLocaleString('en-IN')}`}
+          value={`₹${totalSales.toLocaleString('en-IN')}`}
           icon="trending_up"
           trend="up"
         />
         <KpiCard
           label="ASSIGNED DEALERS"
-          value={dealers.length || 42}
+          value={dealers.length}
           icon="group"
         />
         <KpiCard
           label="PENDING DISPATCHES"
-          value={distributorOrders.filter((o) => o.status === 'Dispatched' || o.status === 'Processing').length || 3}
+          value={distributorOrders.filter((o) => o.status === 'Dispatched' || o.status === 'Processing').length}
           icon="local_shipping"
           accentBorder="blue"
         />
         <KpiCard
           label="UNPAID INVOICES"
-          value="₹1.45 Lakhs"
+          value={`₹${distributorOrders.filter((o) => o.paymentStatus !== 'Paid').reduce((a, b) => a + (b.grandTotal || 0), 0).toLocaleString('en-IN')}`}
           icon="account_balance_wallet"
           accentBorder="red"
         />
@@ -251,21 +330,29 @@ export const DistributorDashboard: React.FC<DistributorDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {distributorOrders.map((ord) => (
-                <tr key={ord.id} onClick={() => onSelectOrder && onSelectOrder(ord)} className="hover:bg-[#f8fafc] cursor-pointer transition-colors">
-                  <td className="p-3 font-bold text-[#14532d]">{ord.orderNumber}</td>
-                  <td className="p-3 text-[#64748b]">{ord.date}</td>
-                  <td className="p-3 font-bold text-[#0f172a]">{ord.dealerName}</td>
-                  <td className="p-3 text-right font-semibold">{(ord.items || []).length} SKUs</td>
-                  <td className="p-3 text-right font-extrabold text-[#15803d]">
-                    ₹{(ord.grandTotal || 0).toLocaleString('en-IN')}
+              {distributorOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-[#64748b]">
+                    No assigned orders found.
                   </td>
-                  <td className="p-3">
-                    <StatusBadge status={ord.status} />
-                  </td>
-                  <td className="p-3 font-mono text-[#64748b]">{ord.lrNumber || 'Pending Dispatch'}</td>
                 </tr>
-              ))}
+              ) : (
+                distributorOrders.map((ord) => (
+                  <tr key={ord.id} onClick={() => onSelectOrder && onSelectOrder(ord)} className="hover:bg-[#f8fafc] cursor-pointer transition-colors">
+                    <td className="p-3 font-bold text-[#14532d]">{ord.orderNumber}</td>
+                    <td className="p-3 text-[#64748b]">{ord.date}</td>
+                    <td className="p-3 font-bold text-[#0f172a]">{ord.dealerName}</td>
+                    <td className="p-3 text-right font-semibold">{(ord.items || []).length} SKUs</td>
+                    <td className="p-3 text-right font-extrabold text-[#15803d]">
+                      ₹{(ord.grandTotal || 0).toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-3">
+                      <StatusBadge status={ord.status} />
+                    </td>
+                    <td className="p-3 font-mono text-[#64748b]">{ord.lrNumber || 'Pending Dispatch'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

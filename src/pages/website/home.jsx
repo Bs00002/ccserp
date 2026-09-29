@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 // @ts-ignore
 import api from 'api/client';
+import { products as mockProducts } from 'data/ccsMock';
 
 const stats = [
   { label: 'Year Established', value: '2023', icon: <TrophyOutlined /> },
@@ -20,13 +21,16 @@ export default function Home() {
     const fetchProducts = async () => {
       try {
         const res = await api.get('/products/products/');
-        const data = res.data.results || res.data;
-        if (data && data.length > 0) {
+        const data = res.data?.results || res.data;
+        if (Array.isArray(data) && data.length > 0) {
           // just grab top 4 for featured
           setFeaturedProducts(data.slice(0, 4));
+        } else {
+          setFeaturedProducts(mockProducts.slice(0, 4));
         }
       } catch (err) {
         console.error('Failed to fetch featured products', err);
+        setFeaturedProducts(mockProducts.slice(0, 4));
       }
     };
     fetchProducts();
@@ -141,11 +145,11 @@ export default function Home() {
             {featuredProducts.length > 0 ? featuredProducts.map((product) => (
               <Grid item xs={12} sm={6} md={3} key={product.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 4, transition: 'transform 0.3s', '&:hover': { transform: 'translateY(-10px)' }, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-                  <CardMedia component="img" height="200" image={product.image_url || 'https://via.placeholder.com/500x300?text=CCS+Product'} alt={product.name} />
+                  <CardMedia component="img" height="200" image={product.image_url || product.images?.[0] || 'https://via.placeholder.com/500x300?text=CCS+Product'} alt={product.name} />
                   <CardContent sx={{ flexGrow: 1, p: 3 }}>
                     <Typography variant="h6" fontWeight="bold" gutterBottom>{product.name}</Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>{product.technical_name}</Typography>
-                    <Typography variant="subtitle2" color="primary.main">{product.category_name}</Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>{product.technical_name || product.technicalName || product.composition}</Typography>
+                    <Typography variant="subtitle2" color="primary.main">{product.category_name || product.category}</Typography>
                   </CardContent>
                 </Card>
               </Grid>

@@ -2,13 +2,22 @@ from rest_framework import serializers
 from .models import Complaint, ReturnRequest, Enquiry
 
 class ComplaintSerializer(serializers.ModelSerializer):
-    dealer_name = serializers.CharField(source='dealer.username', read_only=True)
+    dealer_name = serializers.SerializerMethodField()
+    dealer_email = serializers.CharField(source='dealer.email', read_only=True)
+    dealer_role = serializers.CharField(source='dealer.role', read_only=True)
     assigned_to_name = serializers.CharField(source='assigned_to.username', read_only=True)
+    assigned_to_email = serializers.CharField(source='assigned_to.email', read_only=True)
     
     class Meta:
         model = Complaint
         fields = '__all__'
-        read_only_fields = ['status', 'assigned_to']
+        read_only_fields = ['status', 'assigned_to', 'dealer']
+
+    def get_dealer_name(self, obj):
+        if not obj.dealer:
+            return 'Anonymous'
+        name = f"{obj.dealer.first_name} {obj.dealer.last_name}".strip()
+        return name or getattr(obj.dealer, 'company_name', None) or obj.dealer.username
 
 class AdminComplaintSerializer(ComplaintSerializer):
     class Meta:
@@ -16,13 +25,23 @@ class AdminComplaintSerializer(ComplaintSerializer):
         fields = '__all__'
 
 class ReturnRequestSerializer(serializers.ModelSerializer):
-    dealer_name = serializers.CharField(source='dealer.username', read_only=True)
+    dealer_name = serializers.SerializerMethodField()
+    dealer_email = serializers.CharField(source='dealer.email', read_only=True)
+    dealer_role = serializers.CharField(source='dealer.role', read_only=True)
     order_number = serializers.CharField(source='order.order_number', read_only=True)
+    assigned_to_name = serializers.CharField(source='assigned_to.username', read_only=True)
+    assigned_to_email = serializers.CharField(source='assigned_to.email', read_only=True)
     
     class Meta:
         model = ReturnRequest
         fields = '__all__'
-        read_only_fields = ['status', 'assigned_to']
+        read_only_fields = ['status', 'assigned_to', 'dealer']
+
+    def get_dealer_name(self, obj):
+        if not obj.dealer:
+            return 'Anonymous'
+        name = f"{obj.dealer.first_name} {obj.dealer.last_name}".strip()
+        return name or getattr(obj.dealer, 'company_name', None) or obj.dealer.username
 
 class AdminReturnRequestSerializer(ReturnRequestSerializer):
     class Meta:

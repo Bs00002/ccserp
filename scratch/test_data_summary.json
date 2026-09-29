@@ -1,0 +1,412 @@
+{
+  "test_users_count": 28,
+  "test_orders_count": 60,
+  "test_invoices_count": 11,
+  "test_ledger_count": 22,
+  "test_stock_count": 3,
+  "test_complaints_count": 15,
+  "test_expenses_count": 3,
+  "test_notifications_count": 26,
+  "test_users": [
+    {
+      "id": "21e07927-a004-4849-838f-69455c1775b0",
+      "username": "unrelated_emp_audit",
+      "email": "unrelated_emp_audit@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'audit'"
+      ]
+    },
+    {
+      "id": "d150b8e7-5bca-4003-b1bd-3eec1594dc5c",
+      "username": "admin_workflow",
+      "email": "admin_workflow_test@ccs.com",
+      "role": "Admin",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "af01cfeb-54fe-41be-b320-881611b280d2",
+      "username": "QA_20260925_163641_inactive",
+      "email": "QA_20260925_163641_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "fdee05a4-dfaf-41f0-b77d-8c5ee57b1430",
+      "username": "QA_20260925_152455_inactive",
+      "email": "QA_20260925_152455_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "4d8ec75b-ed03-4f93-b701-09e8445d0c6c",
+      "username": "testdistributor",
+      "email": "testdistributor@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'"
+      ]
+    },
+    {
+      "id": "1d109dff-5fc7-4a20-86ee-bc4be4b79b03",
+      "username": "emp_workflow_user",
+      "email": "emp_workflow_user@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "c67ce6e4-bdeb-4ee3-8f27-0a729d4dfbb1",
+      "username": "kisan_seva_test",
+      "email": "kisan_seva_test@ccs.com",
+      "role": "Dealer",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'"
+      ]
+    },
+    {
+      "id": "ad255d65-c2bf-4536-a87d-c59905164f4f",
+      "username": "QA_20260925_151450_inactive",
+      "email": "QA_20260925_151450_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "167dacf0-5730-4700-8291-158b802020c4",
+      "username": "QA_20260925_163504_inactive",
+      "email": "QA_20260925_163504_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "161626e2-f254-4842-a512-c74599f2f9a9",
+      "username": "test_dealer_workflow",
+      "email": "test_dealer_workflow@chitracropscience.com",
+      "role": "Dealer",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "0f5c3bc8-ae40-4041-a4f6-73365e3b5b9a",
+      "username": "emp_workflow",
+      "email": "employee_workflow_test@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "1d5e8191-fa97-4878-8ab0-39c608face37",
+      "username": "emp_audit",
+      "email": "emp_audit@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'audit'"
+      ]
+    },
+    {
+      "id": "25e15728-931b-466f-b820-d9d57d5c74f9",
+      "username": "QA_20260925_151353_inactive",
+      "email": "QA_20260925_151353_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "ca0b9ac6-4eb5-44d3-a32b-48bc43fe0341",
+      "username": "QA_20260925_151057_inactive",
+      "email": "QA_20260925_151057_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "09e855f0-8082-4f80-92a9-9254d7336cd5",
+      "username": "dist_audit",
+      "email": "dist_audit@ccs.com",
+      "role": "Dealer",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'audit'"
+      ]
+    },
+    {
+      "id": "a2572e07-7ebf-4974-8f4a-add550cfdcff",
+      "username": "emp_workflow_test",
+      "email": "emp_workflow@ccs.com",
+      "role": "Distributor",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "05cba383-c522-40fa-aa7a-cbe101c31f2f",
+      "username": "QA_20260925_151301_inactive",
+      "email": "QA_20260925_151301_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "ea47021d-b98f-4a4b-b7df-4b9a863198d7",
+      "username": "dist_workflow",
+      "email": "distributor_workflow_test@ccs.com",
+      "role": "Dealer",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "57d297d2-e937-4e02-9d2e-9dfb1681a194",
+      "username": "QA_20260925_150918_inactive",
+      "email": "QA_20260925_150918_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "f7172e6e-6fcc-4325-a1cd-8a7abde4a18d",
+      "username": "wh_audit",
+      "email": "wh_audit@ccs.com",
+      "role": "Warehouse",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'audit'"
+      ]
+    },
+    {
+      "id": "47ce1599-1ee7-48a6-b3ec-c71d46f7df39",
+      "username": "admin",
+      "email": "admin@example.com",
+      "role": "Admin",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'example.com'"
+      ]
+    },
+    {
+      "id": "663c8958-cc02-45e9-b25c-7a5f01b97a4f",
+      "username": "QA_20260925_151205_inactive",
+      "email": "QA_20260925_151205_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "aebfe22f-1f79-4b49-b0cf-36d9215b7e10",
+      "username": "admin_audit",
+      "email": "admin_audit@ccs.com",
+      "role": "Admin",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'audit'"
+      ]
+    },
+    {
+      "id": "46225f41-44da-4f15-b1c5-74b5a0f706d4",
+      "username": "QA_20260925_152315_inactive",
+      "email": "QA_20260925_152315_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "3fbeba2d-e345-4611-b96f-aed4ec2ef153",
+      "username": "dealer_workflow_test",
+      "email": "dealer_workflow@ccs.com",
+      "role": "Dealer",
+      "is_active": true,
+      "reasons": [
+        "Contains keyword 'test'",
+        "Contains keyword 'workflow'"
+      ]
+    },
+    {
+      "id": "af73c712-8e95-4ce5-bb38-f2cbcc03688c",
+      "username": "QA_20260925_172913_inactive",
+      "email": "QA_20260925_172913_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "550af2e9-77c4-4993-ae82-7a044c5c4dd5",
+      "username": "QA_20260926_113706_inactive",
+      "email": "QA_20260926_113706_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    },
+    {
+      "id": "fd8baca5-c1da-404a-88a3-9bab3c99dbc7",
+      "username": "QA_20260925_201541_inactive",
+      "email": "QA_20260925_201541_inactive@ccs.com",
+      "role": "Dealer",
+      "is_active": false,
+      "reasons": [
+        "Contains keyword 'qa_'",
+        "Contains keyword 'inactive'"
+      ]
+    }
+  ],
+  "test_invoices": [
+    {
+      "id": "0ea3c91f-ea3a-4844-99f8-c7ee46fa6daa",
+      "invoice_number": "INV-QA_20260925_163504",
+      "order_number": "ORD-244478",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-244478"
+      ]
+    },
+    {
+      "id": "18f15d81-e56e-4e4f-96f0-a1fdd8deca87",
+      "invoice_number": "INV-QA_20260925_151301",
+      "order_number": "ORD-552657",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-552657"
+      ]
+    },
+    {
+      "id": "56914466-b735-4dd5-a232-4f4545d1626d",
+      "invoice_number": "INV-QA_20260925_152315",
+      "order_number": "ORD-792475",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-792475"
+      ]
+    },
+    {
+      "id": "81d310f0-a432-4f97-8f2f-695a0cacbd10",
+      "invoice_number": "INV-QA_20260925_163641",
+      "order_number": "ORD-715575",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-715575"
+      ]
+    },
+    {
+      "id": "8c047215-aca0-4524-a8f1-68417a909a60",
+      "invoice_number": "INV-QA_20260925_152455",
+      "order_number": "ORD-257746",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-257746"
+      ]
+    },
+    {
+      "id": "b867574d-4a4c-4866-8fb4-0d40389a7e47",
+      "invoice_number": "INV-QA_20260925_151353",
+      "order_number": "ORD-894340",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-894340"
+      ]
+    },
+    {
+      "id": "d5b5312d-983b-4578-a120-a4cec9bb389b",
+      "invoice_number": "INV-2026-TEST-001",
+      "order_number": "ORD-TEST-INV-001",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-TEST-INV-001"
+      ]
+    },
+    {
+      "id": "ec92d57c-1032-4ccc-a5ed-c8b403fc5d85",
+      "invoice_number": "INV-QA_20260925_151450",
+      "order_number": "ORD-859064",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-859064"
+      ]
+    },
+    {
+      "id": "60830b16-d9ae-4db0-a4c7-f4978d3eea30",
+      "invoice_number": "INV-QA_20260925_172913",
+      "order_number": "ORD-737104",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-737104"
+      ]
+    },
+    {
+      "id": "c333c868-f51a-4192-a946-915811bbc8a6",
+      "invoice_number": "INV-QA_20260925_201541",
+      "order_number": "ORD-611679",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-611679"
+      ]
+    },
+    {
+      "id": "8c5f99fa-9e0e-4530-a2a4-4cc596e063b1",
+      "invoice_number": "INV-QA_20260926_113706",
+      "order_number": "ORD-775647",
+      "reasons": [
+        "Test pattern in invoice_number",
+        "Linked to test order ORD-775647"
+      ]
+    }
+  ]
+}

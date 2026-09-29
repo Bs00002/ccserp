@@ -1,52 +1,79 @@
 import React, { useState, useEffect } from 'react';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+import ReloadOutlined from '@ant-design/icons/ReloadOutlined';
 import api from 'api/client';
 import { AdminDistributors as StitchAdminDistributors } from '../../views/admin/AdminDistributors';
-import { MOCK_DISTRIBUTORS } from '../../data/stitchMockData';
 
 export default function EmployeesPage() {
   const [distributors, setDistributors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDistributors = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const distRes = await api.get('/admin/users/?role=Distributor');
+      if (Array.isArray(distRes.data)) {
+        const mapped = distRes.data.map((d, index) => ({
+          id: String(d.id || index + 1),
+          code: d.ccs_id || `DIST-PLN-0${index + 1}`,
+          name: d.company_name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || d.username,
+          ownerName: `${d.first_name || ''} ${d.last_name || ''}`.trim() || d.username,
+          phone: d.phone || '—',
+          email: d.email || '—',
+          city: d.city || 'Depot',
+          state: d.state || 'Gujarat',
+          territory: d.territory || 'General',
+          dealersCount: 0,
+          monthlySales: 0,
+          monthlySalesPlan: Number(d.distributor_profile?.monthly_sales_plan || d.employee_profile?.monthly_sales_plan || 0),
+          monthlyCollectionPlan: Number(d.distributor_profile?.monthly_collection_plan || d.employee_profile?.monthly_collection_plan || 0),
+          outstandingBalance: 0,
+          status: d.is_active ? 'Active' : 'Inactive',
+        }));
+        setDistributors(mapped);
+      } else {
+        setDistributors([]);
+      }
+    } catch (err) {
+      console.error('Error fetching distributors API:', err);
+      setError(err?.response?.data?.error || 'Failed to load distributors from database.');
+      setDistributors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDistributors = async () => {
-      try {
-        const distRes = await api.get('/admin/users/?role=Distributor');
-        if (Array.isArray(distRes.data) && distRes.data.length > 0) {
-          const mapped = distRes.data.map((d, index) => ({
-            id: String(d.id || index + 1),
-            code: d.ccs_id || `DIST-PLN-0${index + 1}`,
-            name: d.company_name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Gujarat Agro Distributors',
-            ownerName: `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Distributor Owner',
-            phone: d.phone || '+91 94221 88301',
-            email: d.email || 'distributor@ccs.com',
-            city: d.city || 'Palanpur',
-            state: d.state || 'Gujarat',
-            territory: d.territory || 'Palanpur / Banaskantha Zone',
-            dealersCount: 15,
-            monthlySales: 1250000,
-            outstandingBalance: 340000,
-            status: d.status === 'Approved' ? 'Active' : 'Active',
-          }));
-          setDistributors(mapped);
-        } else {
-          setDistributors(MOCK_DISTRIBUTORS);
-        }
-      } catch (err) {
-        console.error('Error fetching distributors API:', err);
-        setDistributors(MOCK_DISTRIBUTORS);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDistributors();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 font-body text-xs text-[#525252]">
-        Loading Distributor Network & Staff...
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, maxWidth: 650, mx: 'auto', mt: 4 }}>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" startIcon={<ReloadOutlined />} onClick={fetchDistributors}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      </Box>
     );
   }
 
@@ -57,4 +84,3 @@ export default function EmployeesPage() {
     />
   );
 }
-

@@ -19,13 +19,12 @@ export default function DistributorDealers() {
     const fetchDealers = async () => {
       try {
         const res = await api.get('/admin/users/?role=Dealer');
-        // Add some mock data to the dealers for presentation since backend may lack these fields
-        const enhancedDealers = res.data.map(d => ({
+        const enhancedDealers = (Array.isArray(res.data) ? res.data : []).map(d => ({
           ...d,
-          shopName: d.company_name || 'Agro Center',
-          city: d.city || 'Ahmedabad',
-          outstanding: Math.floor(Math.random() * 50000),
-          mobile: d.phone || '9876543210'
+          shopName: d.company_name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || d.username,
+          city: d.city || 'Depot',
+          outstanding: parseFloat(d.outstanding_amount || 0),
+          mobile: d.phone || '—'
         }));
         setDealers(enhancedDealers);
       } catch (err) {

@@ -124,21 +124,29 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products = [], onA
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e0e0e0]">
-            {filtered.map((p) => (
-              <tr key={p.id} className="hover:bg-[#f4f4f4]">
-                <td className="p-3 font-bold text-[#0f62fe]">{p.code}</td>
-                <td className="p-3 font-bold text-[#161616]">{p.name}</td>
-                <td className="p-3 text-[#525252] max-w-xs truncate">{p.technicalName}</td>
-                <td className="p-3 text-[#525252]">{p.category}</td>
-                <td className="p-3 text-[#525252]">{p.packSize}</td>
-                <td className="p-3 text-right text-[#525252]">₹{p.mrp}</td>
-                <td className="p-3 text-right font-bold text-[#161616]">₹{p.dealerPrice}</td>
-                <td className="p-3 text-right font-bold text-[#161616]">{p.stock} Units</td>
-                <td className="p-3">
-                  <StatusBadge status={p.status} />
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="p-8 text-center text-[#64748b]">
+                  No products available in the database.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((p) => (
+                <tr key={p.id} className="hover:bg-[#f4f4f4]">
+                  <td className="p-3 font-bold text-[#0f62fe]">{p.code}</td>
+                  <td className="p-3 font-bold text-[#161616]">{p.name}</td>
+                  <td className="p-3 text-[#525252] max-w-xs truncate">{p.technicalName}</td>
+                  <td className="p-3 text-[#525252]">{p.category}</td>
+                  <td className="p-3 text-[#525252]">{p.packSize}</td>
+                  <td className="p-3 text-right text-[#525252]">₹{p.mrp}</td>
+                  <td className="p-3 text-right font-bold text-[#161616]">₹{p.dealerPrice}</td>
+                  <td className="p-3 text-right font-bold text-[#161616]">{p.stock} Units</td>
+                  <td className="p-3">
+                    <StatusBadge status={p.status} />
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

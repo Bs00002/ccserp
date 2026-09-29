@@ -1,8 +1,0 @@
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "ignorePatterns": ["mantis-free-react-admin-template-master/**", "dist/**", "node_modules/**"],
-  "rules": {
-    "react/rules-of-hooks": "error"
-  }
-}

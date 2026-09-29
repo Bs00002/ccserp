@@ -203,8 +203,12 @@ export const AdminExpenses: React.FC<AdminExpensesProps> = ({
               <th className="p-3 font-semibold">Date</th>
               <th className="p-3 font-semibold">Expense Type</th>
               <th className="p-3 font-semibold text-center">Receipt Voucher</th>
-              <th className="p-3 font-semibold text-right">Ride KM</th>
-              <th className="p-3 font-semibold text-right">Amount Claimed</th>
+              <th className="p-3 font-semibold text-right">Start KM</th>
+              <th className="p-3 font-semibold text-right">End KM</th>
+              <th className="p-3 font-semibold text-right">Total KM</th>
+              <th className="p-3 font-semibold text-right">KM Rate</th>
+              <th className="p-3 font-semibold text-right">KM Amt (₹)</th>
+              <th className="p-3 font-semibold text-right">Total Claim (₹)</th>
               <th className="p-3 font-semibold">Remarks / Dealer</th>
               <th className="p-3 font-semibold">Status</th>
               <th className="p-3 font-semibold text-center">Audit Actions</th>
@@ -213,10 +217,16 @@ export const AdminExpenses: React.FC<AdminExpensesProps> = ({
           <tbody className="divide-y divide-[#e0e0e0]">
             {(expenses || []).map((exp) => {
               const proofUrl = exp.proofImage || exp.billUrl || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80';
+              const sKm = exp.startingKm ?? (exp as any).starting_km;
+              const eKm = exp.endingKm ?? (exp as any).ending_km;
+              const tKm = exp.totalKm ?? (exp as any).total_km ?? exp.totalRideKm ?? exp.rideKm;
+              const kRate = exp.kmRate ?? (exp as any).km_rate;
+              const kAmt = exp.kmAmount ?? (exp as any).km_amount;
+
               return (
                 <tr key={exp.id} className="hover:bg-[#f4f4f4]">
                   <td className="p-3 font-bold text-[#0f62fe]">{exp.id}</td>
-                  <td className="p-3 font-bold text-[#161616]">{exp.employeeName || 'Sanjay Deshmukh'}</td>
+                  <td className="p-3 font-bold text-[#161616]">{exp.employeeName || 'Sales Officer'}</td>
                   <td className="p-3 text-[#525252]">{exp.date}</td>
                   <td className="p-3 font-semibold text-[#161616]">{exp.type}</td>
                   
@@ -228,13 +238,17 @@ export const AdminExpenses: React.FC<AdminExpensesProps> = ({
                           isOpen: true,
                           title: `Receipt Voucher — Claim ${exp.id}`,
                           imageUrl: proofUrl,
-                          employeeName: exp.employeeName || 'Sanjay Deshmukh',
+                          employeeName: exp.employeeName || 'Sales Officer',
                           date: exp.date,
                           status: exp.status,
                           details: {
                             'Expense Type': exp.type,
-                            'Amount Claimed': `₹${(exp.amount || 0).toLocaleString('en-IN')}`,
-                            'Ride Distance': exp.rideKm ? `${exp.rideKm} KM` : 'N/A',
+                            'Starting KM': sKm !== undefined && sKm !== null ? `${sKm}` : 'N/A',
+                            'Ending KM': eKm !== undefined && eKm !== null ? `${eKm}` : 'N/A',
+                            'Total Ride KM': tKm !== undefined && tKm !== null ? `${tKm} KM` : 'N/A',
+                            'KM Rate (Admin)': kRate !== undefined && kRate !== null ? `₹${kRate} / KM` : 'N/A',
+                            'KM Amount': kAmt !== undefined && kAmt !== null ? `₹${Number(kAmt).toLocaleString('en-IN')}` : 'N/A',
+                            'Total Amount Claimed': `₹${(exp.amount || 0).toLocaleString('en-IN')}`,
                             'Dealer / Destination': exp.dealerVisited || 'Multiple Outlets',
                             Remarks: exp.remarks || 'Standard expense voucher',
                           },
@@ -247,8 +261,20 @@ export const AdminExpenses: React.FC<AdminExpensesProps> = ({
                     </button>
                   </td>
 
-                  <td className="p-3 text-right text-[#525252]">
-                    {exp.rideKm ? `${exp.rideKm} KM` : '-'}
+                  <td className="p-3 text-right font-mono text-[#525252]">
+                    {sKm !== undefined && sKm !== null ? sKm : '-'}
+                  </td>
+                  <td className="p-3 text-right font-mono text-[#525252]">
+                    {eKm !== undefined && eKm !== null ? eKm : '-'}
+                  </td>
+                  <td className="p-3 text-right font-mono font-bold text-[#15803d]">
+                    {tKm !== undefined && tKm !== null ? `${tKm} KM` : '-'}
+                  </td>
+                  <td className="p-3 text-right font-mono text-[#525252]">
+                    {kRate !== undefined && kRate !== null ? `₹${kRate}/KM` : '-'}
+                  </td>
+                  <td className="p-3 text-right font-mono font-bold text-[#14532d]">
+                    {kAmt !== undefined && kAmt !== null ? `₹${Number(kAmt).toLocaleString('en-IN')}` : '-'}
                   </td>
                   <td className="p-3 text-right font-bold text-[#161616]">
                     ₹{(exp.amount || 0).toLocaleString('en-IN')}
@@ -284,7 +310,7 @@ export const AdminExpenses: React.FC<AdminExpensesProps> = ({
             })}
             {expenses.length === 0 && (
               <tr>
-                <td colSpan={10} className="p-8 text-center text-[#64748b]">
+                <td colSpan={14} className="p-8 text-center text-[#64748b]">
                   No expense records found.
                 </td>
               </tr>

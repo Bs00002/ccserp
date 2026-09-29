@@ -59,6 +59,42 @@ class DealerViewSet(viewsets.ViewSet):
             })
         return Response(results)
 
+    def retrieve(self, request, pk=None):
+        try:
+            user = User.objects.get(id=pk, role=UserRole.DEALER)
+        except (User.DoesNotExist, ValueError):
+            return Response({"error": "Dealer not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        dp = getattr(user, 'dealer_profile', None)
+        orders_qs = Order.objects.filter(dealer=user)
+        total_sales_agg = orders_qs.aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0
+        last_order = orders_qs.order_by('-created_at').first()
+        
+        return Response({
+            "id": str(user.id),
+            "dealer_code": user.ccs_id or f"DLR-{user.id}",
+            "code": user.ccs_id or f"DLR-{user.id}",
+            "company_name": dp.company_name if (dp and dp.company_name) else (user.username or 'Dealer'),
+            "name": dp.company_name if (dp and dp.company_name) else (user.username or 'Dealer'),
+            "contact_person": f"{user.first_name} {user.last_name}".strip() or user.username,
+            "phone": user.phone or '',
+            "email": user.email,
+            "city": dp.city if dp else '',
+            "district": dp.district if dp else '',
+            "state": dp.state if dp else '',
+            "address": dp.address if dp else '',
+            "gstin": getattr(dp, 'gstin', '27AAAAA0000A1Z5') if dp else '',
+            "pan": getattr(dp, 'pan', 'ABCDE1234F') if dp else '',
+            "credit_limit": float(dp.credit_limit) if dp else 500000.0,
+            "outstanding_balance": float(dp.outstanding_balance) if dp else 0.0,
+            "is_active": user.is_active and user.status == UserStatus.APPROVED,
+            "status": "Active" if (user.is_active and user.status == UserStatus.APPROVED) else "Inactive",
+            "last_order_date": last_order.created_at.strftime('%Y-%m-%d') if last_order else '',
+            "orders_count": orders_qs.count(),
+            "total_sales": float(total_sales_agg),
+            "loyalty_points": dp.loyalty_points if dp else 0,
+        })
+
     def create(self, request):
         data = request.data
         email = data.get('email')
@@ -149,4 +185,43 @@ class DistributorViewSet(viewsets.ViewSet):
                 "status": "Active" if (user.is_active and user.status == UserStatus.APPROVED) else "Inactive"
             })
         return Response(results)
+
+    def retrieve(self, request, pk=None):
+        try:
+            user = User.objects.get(id=pk, role=UserRole.DISTRIBUTOR)
+        except (User.DoesNotExist, ValueError):
+            return Response({"error": "Distributor not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        dp = getattr(user, 'distributor_profile', None)
+        ep = getattr(user, 'employee_profile', None)
+        dealers_count = User.objects.filter(role=UserRole.DEALER).count()
+        orders_qs = Order.objects.filter(created_by=user)
+        monthly_sales = orders_qs.aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0
+
+        company = (dp.company_name if dp and dp.company_name else None) or f"{user.first_name} {user.last_name}".strip() or user.username
+        territory = (dp.territory if dp else None) or (ep.territory if ep else 'General Territory')
+
+        return Response({
+            "id": str(user.id),
+            "code": user.ccs_id or f"DST-{user.id}",
+            "company_name": company,
+            "name": company,
+            "contact_person": f"{user.first_name} {user.last_name}".strip() or user.username,
+            "phone": user.phone or '',
+            "email": user.email,
+            "territory": territory,
+            "city": dp.district if dp else (ep.district if ep else 'HQ'),
+            "district": dp.district if dp else (ep.district if ep else 'HQ'),
+            "state": dp.state if dp else (ep.state if ep else 'State'),
+            "address": dp.address if hasattr(dp, 'address') else '',
+            "dealers_count": dealers_count,
+            "monthly_sales": float(monthly_sales),
+            "monthly_sales_plan": float(dp.monthly_sales_plan if dp and dp.monthly_sales_plan else 0.0),
+            "monthly_collection_plan": float(dp.monthly_collection_plan if dp and dp.monthly_collection_plan else 0.0),
+            "outstanding_balance": 0.0,
+            "credit_limit": float(dp.monthly_sales_plan if dp and dp.monthly_sales_plan else 500000.0),
+            "km_rate": float(user.km_rate) if user.km_rate is not None else 5.0,
+            "is_active": user.is_active and user.status == UserStatus.APPROVED,
+            "status": "Active" if (user.is_active and user.status == UserStatus.APPROVED) else "Inactive"
+        })
 

@@ -20,8 +20,9 @@ export const CreateOrderWizard: React.FC<CreateOrderWizardProps> = ({
   const [categoryFilter, setCategoryFilter] = useState('All');
 
   // Quantities map: productId -> number
-  const [cartItems, setCartItems] = useState<{ [productId: string]: number }>({
-    'p-1': 5, // Default pre-selected item for quick trial
+  const [cartItems, setCartItems] = useState<{ [productId: string]: number }>(() => {
+    const defaultProduct = products && products.length > 0 ? products[0].id : 'p-1';
+    return { [defaultProduct]: 2 };
   });
 
   const selectedDealer = dealers.find((d) => d.id === selectedDealerId) || dealers[0];
@@ -103,7 +104,7 @@ export const CreateOrderWizard: React.FC<CreateOrderWizardProps> = ({
         <div>
           <h1 className="text-2xl font-light text-[#161616]">B2B Bulk Crop Protection Order Entry</h1>
           <p className="text-xs text-[#525252] mt-0.5">
-            Select products, review wholesale pricing with GST, and dispatch to dealer store
+            Select products, review wholesale pricing with GST, and dispatch to distributor
           </p>
         </div>
         <button
@@ -115,16 +116,16 @@ export const CreateOrderWizard: React.FC<CreateOrderWizardProps> = ({
       </div>
 
       <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Dealer Selection & Product Catalog */}
+        {/* Left 2 Cols: Distributor Selection & Product Catalog */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Dealer Selection Box */}
+          {/* Distributor Selection Box */}
           <div className="bg-white border border-[#e0e0e0] p-4 shadow-xs space-y-3">
             <h3 className="font-bold text-xs text-[#161616] uppercase tracking-wider border-b border-[#e0e0e0] pb-2">
-              1. Select Recipient Dealer Store
+              1. Select Recipient Distributor
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#525252] mb-1">Target Dealer</label>
+                <label className="block text-[11px] font-bold text-[#525252] mb-1">Target Distributor</label>
                 <select
                   value={selectedDealerId}
                   onChange={(e) => setSelectedDealerId(e.target.value)}
@@ -145,9 +146,9 @@ export const CreateOrderWizard: React.FC<CreateOrderWizardProps> = ({
                   onChange={(e) => setPaymentTerms(e.target.value)}
                   className="w-full p-2 border border-[#e0e0e0] bg-[#f4f4f4] font-medium text-xs focus:outline-none focus:border-[#0f62fe]"
                 >
-                  <option value="Credit 30 Days">Credit 30 Days (Standard B2B)</option>
-                  <option value="Direct Payment">Direct Online Bank Transfer</option>
-                  <option value="Advance Payment">Advance Payment (100% Cash)</option>
+                  <option value="Cash (15 Days)">Cash (15 Days)</option>
+                  <option value="Advance">Advance</option>
+                  <option value="Credit (90 Days)">Credit (90 Days)</option>
                 </select>
               </div>
             </div>

@@ -147,57 +147,58 @@ export const AdminDealers: React.FC<AdminDealersProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {filtered.map((d) => (
-                <tr key={d.id} className="hover:bg-[#f8fafc] transition-colors">
-                  <td className="p-3 font-bold text-[#14532d]">{d.code}</td>
-                  <td className="p-3 font-bold text-[#0f172a]">
-                    <button
-                      onClick={() => setActiveDealerDetail(d)}
-                      className="hover:underline text-left text-[#14532d] font-bold cursor-pointer"
-                    >
-                      {d.name}
-                    </button>
-                  </td>
-                  <td className="p-3 text-[#64748b]">{d.ownerName}</td>
-                  <td className="p-3 text-[#64748b]">{d.city}</td>
-                  <td className="p-3 text-[#64748b]">{d.distributorName}</td>
-                  <td className="p-3 text-right font-semibold text-[#0f172a]">
-                    ₹{d.creditLimit.toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-3 text-right font-bold text-[#dc2626]">
-                    ₹{d.outstandingBalance.toLocaleString('en-IN')}
-                  </td>
-                  <td className="p-3">
-                    <StatusBadge status={d.status} />
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        onClick={() => setActiveDealerDetail(d)}
-                        className="px-2 py-1 bg-[#f0fdf4] text-[#14532d] border border-[#86efac] text-[11px] font-bold rounded hover:bg-[#dcfce7] flex items-center gap-1 cursor-pointer"
-                        title="View Detailed Record"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">info</span>
-                        Details
-                      </button>
-                      <button
-                        onClick={() => onSwitchToDealerPortal && onSwitchToDealerPortal(d)}
-                        className="px-2 py-1 bg-[#e0f2fe] text-[#0369a1] border border-[#7dd3fc] text-[11px] font-bold rounded hover:bg-[#bae6fd] flex items-center gap-1 cursor-pointer"
-                        title="View Dealer Portal"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">login</span>
-                        Portal
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+              {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-[#64748b]">
-                    No dealer records found matching your search.
+                    {dealers.length === 0 ? "No dealers found in the database." : "No dealer records found matching your search."}
                   </td>
                 </tr>
+              ) : (
+                filtered.map((d) => (
+                  <tr key={d.id} className="hover:bg-[#f8fafc] transition-colors">
+                    <td className="p-3 font-bold text-[#14532d]">{d.code}</td>
+                    <td className="p-3 font-bold text-[#0f172a]">
+                      <button
+                        onClick={() => setActiveDealerDetail(d)}
+                        className="hover:underline text-left text-[#14532d] font-bold cursor-pointer"
+                      >
+                        {d.name}
+                      </button>
+                    </td>
+                    <td className="p-3 text-[#64748b]">{d.ownerName}</td>
+                    <td className="p-3 text-[#64748b]">{d.city}</td>
+                    <td className="p-3 text-[#64748b]">{d.distributorName}</td>
+                    <td className="p-3 text-right font-semibold text-[#0f172a]">
+                      ₹{d.creditLimit.toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-3 text-right font-bold text-[#dc2626]">
+                      ₹{d.outstandingBalance.toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-3">
+                      <StatusBadge status={d.status} />
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setActiveDealerDetail(d)}
+                          className="px-2 py-1 bg-[#f0fdf4] text-[#14532d] border border-[#86efac] text-[11px] font-bold rounded hover:bg-[#dcfce7] flex items-center gap-1 cursor-pointer"
+                          title="View Detailed Record"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">info</span>
+                          Details
+                        </button>
+                        <button
+                          onClick={() => onSwitchToDealerPortal && onSwitchToDealerPortal(d)}
+                          className="px-2 py-1 bg-[#e0f2fe] text-[#0369a1] border border-[#7dd3fc] text-[11px] font-bold rounded hover:bg-[#bae6fd] flex items-center gap-1 cursor-pointer"
+                          title="View Dealer Portal"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">login</span>
+                          Portal
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

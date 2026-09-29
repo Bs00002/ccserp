@@ -3,46 +3,14 @@ import { Typography, Box, List, ListItem, ListItemText, ListItemButton, Divider,
 import MasterDetailLayout from 'components/ui/MasterDetailLayout';
 import { SearchOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import api from 'api/client';
+import useRealtime from 'hooks/useRealtime';
 import { formatINR } from 'data/ccsMock';
 import MainCard from 'components/MainCard';
 
-const mockDealerOrders = [
-  {
-    id: '1',
-    orderNo: 'ORD-2026-101',
-    orderDate: '2026-08-06',
-    status: 'Approved',
-    totalAmount: 16250,
-    items: [
-      { productName: 'Chitra Zyme 500ml', quantity: 25, unitPrice: 650, total: 16250 }
-    ]
-  },
-  {
-    id: '2',
-    orderNo: 'ORD-2026-098',
-    orderDate: '2026-08-05',
-    status: 'Delivered',
-    totalAmount: 3200,
-    items: [
-      { productName: 'Chitra Gold 1kg', quantity: 10, unitPrice: 320, total: 3200 }
-    ]
-  },
-  {
-    id: '3',
-    orderNo: 'ORD-2026-085',
-    orderDate: '2026-08-03',
-    status: 'In Transit',
-    totalAmount: 14250,
-    items: [
-      { productName: 'Chitra King 1Ltr', quantity: 15, unitPrice: 950, total: 14250 }
-    ]
-  }
-];
-
 export default function DealerOrders() {
-  const [orders, setOrders] = useState(mockDealerOrders);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState(mockDealerOrders[0].id);
+  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
 
   const fetchOrders = async () => {
@@ -66,10 +34,15 @@ export default function DealerOrders() {
           ]
         }));
         setOrders(mapped);
-        if (mapped.length > 0) setSelectedId(mapped[0].id);
+        setSelectedId(mapped[0]?.id || null);
+      } else {
+        setOrders([]);
+        setSelectedId(null);
       }
     } catch (err) {
       console.error('Failed to fetch dealer orders', err);
+      setOrders([]);
+      setSelectedId(null);
     } finally {
       setLoading(false);
     }
@@ -78,6 +51,14 @@ export default function DealerOrders() {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Real-time listener: auto-refresh dealer orders on order events
+  useRealtime(
+    ['order.created', 'order.updated', 'order.approved', 'order.bilty_created', 'order.lr_created', 'order.dispatched'],
+    () => {
+      fetchOrders();
+    }
+  );
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o =>

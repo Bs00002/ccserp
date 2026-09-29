@@ -4,6 +4,7 @@ import { SearchOutlined, DownloadOutlined, CloseOutlined } from '@ant-design/ico
 import { Helmet } from 'react-helmet-async';
 // @ts-ignore
 import api from 'api/client';
+import { products as mockProducts } from 'data/ccsMock';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -17,12 +18,15 @@ export default function Products() {
       try {
         const res = await api.get('/products/products/');
         // Handle both paginated and non-paginated responses
-        const data = res.data.results || res.data;
-        if (data && data.length > 0) {
+        const data = res.data?.results || res.data;
+        if (Array.isArray(data) && data.length > 0) {
           setProducts(data);
+        } else {
+          setProducts(mockProducts);
         }
       } catch (err) {
         console.error('Failed to fetch products', err);
+        setProducts(mockProducts);
       } finally {
         setLoading(false);
       }
@@ -30,11 +34,13 @@ export default function Products() {
     fetchProducts();
   }, []);
 
-  const categories = ['All', ...new Set(products.map(p => p.category_name || p.category?.name || 'Uncategorized'))];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const categories = ['All', ...new Set(safeProducts.map(p => p.category_name || p.category?.name || p.category || 'Uncategorized'))];
 
-  const filtered = products.filter(p => {
-    const pCat = p.category_name || p.category?.name || 'Uncategorized';
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.technical_name?.toLowerCase().includes(search.toLowerCase());
+  const filtered = safeProducts.filter(p => {
+    const pCat = p.category_name || p.category?.name || p.category || 'Uncategorized';
+    const techName = p.technical_name || p.technicalName || p.composition || '';
+    const matchesSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || techName.toLowerCase().includes(search.toLowerCase());
     const matchesCat = category === 'All' || pCat === category;
     return matchesSearch && matchesCat;
   });

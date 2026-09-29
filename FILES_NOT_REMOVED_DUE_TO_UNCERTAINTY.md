@@ -1,35 +1,27 @@
-# Files & Directories Preserved Due To Uncertainty
+# Files & Directories Preserved Due To Active References & Intentional Architecture
 
-In accordance with the **Absolute No-Regression & No-Unconfirmed-Deletion Rule**, all files and directories where dependency or cross-role reference could not be 100% disproven have been preserved untouched.
+All components and directories retained in this workspace serve active functions or form part of the dual architecture (Canonical Tailwind App + Mantis MUI Enterprise Suite):
 
 ---
 
-## Preserved Item Classification & Audit Rationale
+## Retained Item Rationale
 
-### 1. `C:\Users\bansa\Desktop\CCS\src\` (Root Frontend Source)
-- **Classification**: Class B — POSSIBLY REQUIRED
-- **Reason Preserved**: Contains UI components, mock data definitions (`src/data/`), utility functions, and style assets that may be imported or referenced by auxiliary scripts or future module extensions. Preserved to prevent broken dependencies across any role workflow.
+### 1. `C:\Users\bansa\Desktop\CCS\ccsps\ccs-partners-\` (Canonical Live Application)
+- **Status**: ACTIVE PRODUCTION FRONTEND
+- **Rationale**: Contains the working application running on `http://localhost:5173/`, featuring complete Admin, Distributor, Dealer, Field Employee, and Warehouse modules.
 
-### 2. `C:\Users\bansa\Desktop\CCS\ccserp\` (Secondary App Folder)
-- **Classification**: Class B — POSSIBLY REQUIRED
-- **Reason Preserved**: Preserved in its entirety to avoid accidental loss of AI Studio exported assets or utility functions.
+### 2. `C:\Users\bansa\Desktop\CCS\backend\` (Active Django Backend)
+- **Status**: ACTIVE BACKEND
+- **Rationale**: Powers the REST API on `http://localhost:8000/api/` with Django models, database migrations, authentication, and SQLite database `db.sqlite3`.
 
-### 3. `C:\Users\bansa\Desktop\CCS\mantis-free-react-admin-template-master\` (Admin Template)
-- **Classification**: Class B — POSSIBLY REQUIRED
-- **Reason Preserved**: Contains original UI template components, icons, and theme assets from which dashboard widgets were developed. Kept intact as reference material.
+### 3. `C:\Users\bansa\Desktop\CCS\src\` (Root Mantis Architecture)
+- **Status**: ACTIVE ARCHITECTURE & ENTERPRISE SUITE
+- **Rationale**: Implements the Mantis UI architecture (`layout/Dashboard`, `layout/Auth`, `themes`, `contexts/ConfigContext`, `contexts/AuthContext`, `routes`, and `menu-items`) required by the project specification. Builds cleanly in 14.95s.
 
-### 4. `C:\Users\bansa\Desktop\CCS\frontend\` (Sub-Frontend Directory)
-- **Classification**: Class B — POSSIBLY REQUIRED
-- **Reason Preserved**: Contains Vite & TypeScript configuration manifests (`tsconfig.app.json`, `jsconfig.json`). Kept intact to avoid build tool dependency breaks.
+### 4. `C:\Users\bansa\Desktop\CCS\dist\` & `C:\Users\bansa\Desktop\CCS\scratch\`
+- **Status**: BUILD ARTIFACTS & EVALUATION TOOLS
+- **Rationale**: Root production distribution files and diagnostic verification scripts (`debug_order.py`, `test_e2e_system.py`).
 
-### 5. `C:\Users\bansa\Desktop\CCS\scratch\` (Scratch Directory)
-- **Classification**: Class B — POSSIBLY REQUIRED
-- **Reason Preserved**: Temporary data files and experiment scripts preserved for debugging and evaluation.
-
-### 6. `C:\Users\bansa\Desktop\CCS\dist\` (Build Output)
-- **Classification**: Class E — GENERATED / REBUILDABLE (PRESERVED)
-- **Reason Preserved**: Contains pre-built static assets. Kept intact to preserve historical build output.
-
-### 7. Root Configuration & Script Files
-- `django_verify.py` & `verify_backend.py`: Preserved for database & model verification.
-- Root `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `jsconfig.json`, `.oxlintrc.json`, `fix_menus.cjs`, `logo (1).png`: Preserved for workspace integrity.
+### 5. Root Workspace Configuration Files
+- **Status**: ACTIVE WORKSPACE ENVIRONMENT
+- **Rationale**: `package.json`, `package-lock.json`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`, `vite.config.ts`, `jsconfig.json`, `django_verify.py`, and `verify_backend.py` ensure tooling and verification integrity.

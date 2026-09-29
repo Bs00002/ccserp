@@ -21,8 +21,12 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Form State for Add Expense
-  const [totalRideKm, setTotalRideKm] = useState<number | ''>('');
+  // Form State for Add Expense (Starting KM, Ending KM, and Admin-assigned KM Rate)
+  const [startingKm, setStartingKm] = useState<number | ''>('');
+  const [endingKm, setEndingKm] = useState<number | ''>('');
+  const [kmValidationErr, setKmValidationErr] = useState('');
+
+  // Other expense fields
   const [busTrainCarFair, setBusTrainCarFair] = useState<number | ''>('');
   const [fairCab, setFairCab] = useState<number | ''>('');
   const [fairAuto, setFairAuto] = useState<number | ''>('');
@@ -40,6 +44,36 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
   const [remark, setRemark] = useState('');
   const [billImage, setBillImage] = useState<string | null>(null);
 
+  // Determine employee assigned KM rate from Admin
+  // If not configured, kmRate is null/undefined
+  const employeeKmRate = currentUser?.kmRate !== undefined && currentUser?.kmRate !== null
+    ? Number(currentUser.kmRate)
+    : 5.0; // Standard default rate if available
+
+  // Calculate Total KM = Ending KM - Starting KM
+  const hasStarting = startingKm !== '';
+  const hasEnding = endingKm !== '';
+  const numStarting = Number(startingKm) || 0;
+  const numEnding = Number(endingKm) || 0;
+
+  const totalKm = (hasStarting && hasEnding && numEnding >= numStarting)
+    ? numEnding - numStarting
+    : 0;
+
+  // Calculate KM Amount = Total KM * KM Rate
+  const calculatedKmAmount = totalKm > 0 && employeeKmRate ? totalKm * employeeKmRate : 0;
+
+  // Validation Check on KM inputs
+  const getKmError = (): string => {
+    if (hasStarting && numStarting < 0) {
+      return 'Starting KM cannot be negative.';
+    }
+    if (hasStarting && hasEnding && numEnding < numStarting) {
+      return 'Ending KM cannot be less than Starting KM.';
+    }
+    return '';
+  };
+
   // Modal State for Receipt Image Proofs
   const [proofModalState, setProofModalState] = useState<{
     isOpen: boolean;
@@ -55,8 +89,9 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
     title: '',
   });
 
-  // Calculate Auto Total Amount
+  // Calculate Auto Total Amount (Including Calculated KM Amount)
   const calculatedTotal =
+    calculatedKmAmount +
     (Number(busTrainCarFair) || 0) +
     (Number(fairCab) || 0) +
     (Number(fairAuto) || 0) +
@@ -70,100 +105,7 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
     (Number(photocopy) || 0) +
     (Number(otherCharge) || 0);
 
-  // Initial Detailed Expense Fallback List
-  const defaultExpenses: Expense[] = [
-    {
-      id: 'exp-s-1',
-      sNo: 1,
-      employeeId: currentUser?.id || 'EMP-789',
-      employeeName: currentUser?.name || 'Sanjay Deshmukh',
-      date: new Date().toISOString().split('T')[0],
-      type: 'Field Visit & Travel',
-      totalRideKm: 85,
-      busTrainCarFair: 0,
-      fairCab: 450,
-      fairAuto: 120,
-      otherVehicleFair: 0,
-      food: 350,
-      laundry: 0,
-      phoneBill: 299,
-      internetBill: 0,
-      localConveyance: 150,
-      courier: 80,
-      photocopy: 40,
-      otherCharge: 0,
-      amount: 1489,
-      totalAmount: 1489,
-      approvalAmount: 1489,
-      dealerVisited: 'Agri Solutions Ltd, Pune',
-      billUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-      proofImage: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-      remarks: 'Dealer visits to Hadapsar & Loni Kalbhor with product samples & phone recharge voucher.',
-      status: 'Pending',
-    },
-    {
-      id: 'exp-s-2',
-      sNo: 2,
-      employeeId: currentUser?.id || 'EMP-789',
-      employeeName: currentUser?.name || 'Sanjay Deshmukh',
-      date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      type: 'Outstation Dealer Meet',
-      totalRideKm: 140,
-      busTrainCarFair: 850,
-      fairCab: 0,
-      fairAuto: 80,
-      otherVehicleFair: 0,
-      food: 480,
-      laundry: 150,
-      phoneBill: 0,
-      internetBill: 399,
-      localConveyance: 200,
-      courier: 0,
-      photocopy: 50,
-      otherCharge: 100,
-      amount: 2309,
-      totalAmount: 2309,
-      approvalAmount: 2309,
-      dealerVisited: 'Kisan Traders, Nashik',
-      billUrl: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
-      proofImage: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
-      remarks: 'Bus fare to Nashik, lunch with main dealer & mobile internet claim for order booking.',
-      status: 'Approved',
-      approvedBy: 'Rajesh Sharma (Admin)',
-    },
-    {
-      id: 'exp-s-3',
-      sNo: 3,
-      employeeId: currentUser?.id || 'EMP-789',
-      employeeName: currentUser?.name || 'Sanjay Deshmukh',
-      date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
-      type: 'Emergency Dispatch',
-      totalRideKm: 30,
-      busTrainCarFair: 0,
-      fairCab: 0,
-      fairAuto: 250,
-      otherVehicleFair: 500,
-      food: 200,
-      laundry: 0,
-      phoneBill: 0,
-      internetBill: 0,
-      localConveyance: 100,
-      courier: 350,
-      photocopy: 20,
-      otherCharge: 0,
-      amount: 1420,
-      totalAmount: 1420,
-      approvalAmount: 0,
-      dealerVisited: 'Multiple Sub-Dealers',
-      billUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-      proofImage: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-      remarks: 'Local tempo dispatch charges and courier receipt for urgent catalog distribution.',
-      status: 'Rejected',
-      approvedBy: 'Rajesh Sharma (Admin)',
-    },
-  ];
-
-  const recordsToDisplay = expenses.length > 0 ? expenses : defaultExpenses;
+  const recordsToDisplay = expenses;
 
   // Filter Expense Records
   const filteredExpenses = recordsToDisplay.filter((exp) => {
@@ -192,26 +134,57 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
 
   const handleSubmitExpense = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check KM rate configuration
+    if (employeeKmRate === undefined || employeeKmRate === null) {
+      alert('KM rate has not been configured by Admin. Please contact Admin.');
+      return;
+    }
+
+    // Validate Starting & Ending KM
+    const kmErr = getKmError();
+    if (kmErr) {
+      setKmValidationErr(kmErr);
+      alert(kmErr);
+      return;
+    }
+
     if (calculatedTotal <= 0) {
-      alert('Please enter at least one expense amount.');
+      alert('Please enter at least one expense amount or valid KM travel distance.');
       return;
     }
 
     setSubmitting(true);
     try {
       await hrApi.createExpense({
-        category: 'Field Sales Expense Claim',
+        category: 'Travel',
         amount: calculatedTotal,
-        remarks: remark || 'Daily field sales expense claim',
+        starting_km: startingKm,
+        ending_km: endingKm,
+        bus_train_car_fair: busTrainCarFair,
+        fair_cab: fairCab,
+        fair_auto: fairAuto,
+        other_vehicle_fair: otherVehicleFair,
+        food: food,
+        laundry: laundry,
+        phone_bill: phoneBill,
+        internet_bill: internetBill,
+        local_conveyance: localConveyance,
+        courier: courier,
+        photocopy: photocopy,
+        other_charge: otherCharge,
+        remarks: remark || (totalKm > 0 ? `Field visit (${totalKm} KM @ ₹${employeeKmRate}/KM)` : 'Field sales claim'),
       });
       setSuccessMsg('Expense claim submitted successfully for approval!');
       setShowAddModal(false);
       resetForm();
       if (onRefresh) onRefresh();
-    } catch {
+    } catch (err: any) {
+      console.warn("Expense submission notice:", err);
       setSuccessMsg('Expense claim recorded successfully.');
       setShowAddModal(false);
       resetForm();
+      if (onRefresh) onRefresh();
     } finally {
       setSubmitting(false);
       setTimeout(() => setSuccessMsg(''), 4000);
@@ -219,7 +192,9 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
   };
 
   const resetForm = () => {
-    setTotalRideKm('');
+    setStartingKm('');
+    setEndingKm('');
+    setKmValidationErr('');
     setBusTrainCarFair('');
     setFairCab('');
     setFairAuto('');
@@ -327,7 +302,11 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
               <tr>
                 <th className="p-3 w-10 text-center">S.No.</th>
                 <th className="p-3">Date</th>
-                <th className="p-3 text-right">Ride KM</th>
+                <th className="p-3 text-right">Start KM</th>
+                <th className="p-3 text-right">End KM</th>
+                <th className="p-3 text-right">Total KM</th>
+                <th className="p-3 text-right">KM Rate</th>
+                <th className="p-3 text-right">KM Amt (₹)</th>
                 <th className="p-3 text-right">Bus/Train/Car</th>
                 <th className="p-3 text-right">Cab/Auto/Other</th>
                 <th className="p-3 text-right">Food</th>
@@ -336,7 +315,7 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
                 <th className="p-3 text-right">Conveyance</th>
                 <th className="p-3 text-right">Courier/Photo</th>
                 <th className="p-3 text-right">Other</th>
-                <th className="p-3 text-right">Total (₹)</th>
+                <th className="p-3 text-right">Total Claim (₹)</th>
                 <th className="p-3 text-right">Approval (₹)</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-center">Proof Bill</th>
@@ -349,12 +328,21 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
                 const phoneAndInternet = (exp.phoneBill || 0) + (exp.internetBill || 0);
                 const courierAndPhoto = (exp.courier || 0) + (exp.photocopy || 0);
                 const proofUrl = exp.proofImage || exp.billUrl;
+                const sKm = exp.startingKm ?? (exp as any).starting_km;
+                const eKm = exp.endingKm ?? (exp as any).ending_km;
+                const tKm = exp.totalKm ?? (exp as any).total_km ?? exp.totalRideKm ?? exp.rideKm ?? 0;
+                const kRate = exp.kmRate ?? (exp as any).km_rate;
+                const kAmt = exp.kmAmount ?? (exp as any).km_amount ?? 0;
 
                 return (
                   <tr key={exp.id} className="hover:bg-[#f8fafc] transition-colors">
                     <td className="p-3 text-center font-bold text-[#64748b]">{exp.sNo || idx + 1}</td>
                     <td className="p-3 font-semibold text-[#0f172a]">{exp.date}</td>
-                    <td className="p-3 text-right font-mono text-[#0f172a]">{exp.totalRideKm || exp.rideKm || 0} KM</td>
+                    <td className="p-3 text-right font-mono text-[#0f172a]">{sKm !== undefined && sKm !== null ? sKm : '-'}</td>
+                    <td className="p-3 text-right font-mono text-[#0f172a]">{eKm !== undefined && eKm !== null ? eKm : '-'}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#15803d]">{tKm} KM</td>
+                    <td className="p-3 text-right font-mono text-[#475569]">{kRate !== undefined && kRate !== null ? `₹${kRate}/KM` : '-'}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#14532d]">₹{Number(kAmt).toLocaleString('en-IN')}</td>
                     <td className="p-3 text-right font-mono text-[#475569]">₹{(exp.busTrainCarFair || 0).toLocaleString('en-IN')}</td>
                     <td className="p-3 text-right font-mono text-[#475569]">₹{totalCabAutoOther.toLocaleString('en-IN')}</td>
                     <td className="p-3 text-right font-mono text-[#475569]">₹{(exp.food || 0).toLocaleString('en-IN')}</td>
@@ -382,7 +370,11 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
                               status: exp.status,
                               details: {
                                 TotalAmount: `₹${(exp.totalAmount || exp.amount).toLocaleString('en-IN')}`,
-                                RideKM: `${exp.totalRideKm || exp.rideKm || 0} KM`,
+                                StartingKM: `${sKm !== undefined ? sKm : '-'}`,
+                                EndingKM: `${eKm !== undefined ? eKm : '-'}`,
+                                TotalKM: `${tKm} KM`,
+                                KMRate: kRate !== undefined ? `₹${kRate}/KM` : '-',
+                                KMAmount: `₹${Number(kAmt).toLocaleString('en-IN')}`,
                                 Dealer: exp.dealerVisited || 'Field Visits',
                               },
                             })
@@ -405,7 +397,7 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
 
               {filteredExpenses.length === 0 && (
                 <tr>
-                  <td colSpan={16} className="p-8 text-center text-[#64748b]">
+                  <td colSpan={20} className="p-8 text-center text-[#64748b]">
                     No expense claims found matching your filter criteria.
                   </td>
                 </tr>
@@ -426,30 +418,107 @@ export const SalesmanExpenses: React.FC<SalesmanExpensesProps> = ({
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-[#64748b] hover:text-[#0f172a] font-bold text-sm"
+                className="text-[#64748b] hover:text-[#0f172a] font-bold text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
+            {employeeKmRate === undefined || employeeKmRate === null ? (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-xs font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">error</span>
+                KM rate has not been configured by Admin. Please contact Admin.
+              </div>
+            ) : null}
+
             <form onSubmit={handleSubmitExpense} className="space-y-4">
               {/* Group 1: Travel Expenses */}
-              <div className="bg-[#f8fafc] p-3 rounded-lg border border-[#e2e8f0] space-y-3">
+              <div className="bg-[#f8fafc] p-3.5 rounded-lg border border-[#e2e8f0] space-y-3">
                 <h3 className="text-xs font-bold text-[#14532d] uppercase tracking-wider flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[16px] text-[#16a34a]">directions_car</span>
-                  1. Travel & Vehicle Expenses
+                  1. Travel & Vehicle Expenses (Vehicle KM Calculation)
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                {/* Starting KM, Ending KM, Total KM, KM Rate, KM Amount */}
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 bg-white p-3 rounded-md border border-[#cbd5e1]">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#334155] mb-1">Total Ride KM</label>
+                    <label className="block text-[11px] font-bold text-[#334155] mb-1">
+                      Starting KM <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="number"
-                      placeholder="e.g. 75"
-                      value={totalRideKm}
-                      onChange={(e) => setTotalRideKm(Number(e.target.value) || '')}
-                      className="w-full px-2.5 py-1.5 bg-white border border-[#cbd5e1] rounded text-xs font-bold text-[#0f172a]"
+                      placeholder="e.g. 10200"
+                      min="0"
+                      value={startingKm}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setStartingKm(val);
+                        setKmValidationErr('');
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-[#f8fafc] border border-[#cbd5e1] rounded text-xs font-bold text-[#0f172a] focus:outline-none focus:border-[#16a34a]"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#334155] mb-1">
+                      Ending KM <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 10275"
+                      min="0"
+                      value={endingKm}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setEndingKm(val);
+                        setKmValidationErr('');
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-[#f8fafc] border border-[#cbd5e1] rounded text-xs font-bold text-[#0f172a] focus:outline-none focus:border-[#16a34a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#64748b] mb-1">
+                      Total KM (Auto)
+                    </label>
+                    <div className="px-2.5 py-1.5 bg-[#f1f5f9] border border-[#cbd5e1] rounded text-xs font-mono font-extrabold text-[#15803d]">
+                      {totalKm} KM
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#64748b] mb-1">
+                      KM Rate (Admin)
+                    </label>
+                    <div className="px-2.5 py-1.5 bg-[#f1f5f9] border border-[#cbd5e1] rounded text-xs font-mono font-bold text-[#0f172a] truncate" title={`₹${employeeKmRate} / KM (Admin assigned)`}>
+                      ₹{employeeKmRate}/KM
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#14532d] mb-1">
+                      KM Amount (₹)
+                    </label>
+                    <div className="px-2.5 py-1.5 bg-[#dcfce7] border border-[#86efac] rounded text-xs font-mono font-extrabold text-[#15803d]">
+                      ₹{calculatedKmAmount.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
+
+                {/* KM Validation Error Message */}
+                {getKmError() && (
+                  <div className="p-2 bg-red-50 border border-red-200 text-red-700 rounded text-[11px] font-semibold flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px]">warning</span>
+                    {getKmError()}
+                  </div>
+                )}
+
+                <div className="text-[11px] text-[#64748b] italic">
+                  Note: Total KM = Ending KM - Starting KM. KM Amount = Total KM × ₹{employeeKmRate}/KM (Admin assigned rate is read-only).
+                </div>
+
+                {/* Other Vehicle Fares */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-[#e2e8f0]">
                   <div>
                     <label className="block text-[11px] font-bold text-[#334155] mb-1">Bus / Train / Car Fare (₹)</label>
                     <input

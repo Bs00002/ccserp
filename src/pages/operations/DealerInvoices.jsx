@@ -1,43 +1,47 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Stack, List, ListItemButton, ListItemText, Divider, TextField, InputAdornment, Button, Chip, Grid, Paper } from '@mui/material';
+import { Box, Typography, Stack, List, ListItemButton, ListItemText, Divider, TextField, InputAdornment, Button, Chip, Grid, Alert, CircularProgress } from '@mui/material';
 import MasterDetailLayout from 'components/ui/MasterDetailLayout';
-import { SearchOutlined, FileTextOutlined, DownloadOutlined, PrinterOutlined } from '@ant-design/icons';
+import { SearchOutlined, DownloadOutlined, PrinterOutlined } from '@ant-design/icons';
 import api from 'api/client';
 import { formatINR } from 'data/ccsMock';
 import MainCard from 'components/MainCard';
 
-const mockDealerInvoices = [
-  { id: '1', invoiceNumber: 'INV-2026-001', totalAmount: 16250, pendingAmount: 0, status: 'Paid', date: '2026-08-06', lrNumber: 'LR-9840192', biltyNo: 'BL-84920' },
-  { id: '2', invoiceNumber: 'INV-2026-002', totalAmount: 3200, pendingAmount: 3200, status: 'Unpaid', date: '2026-08-05', lrNumber: 'LR-9840188', biltyNo: 'BL-84915' },
-  { id: '3', invoiceNumber: 'INV-2026-003', totalAmount: 14250, pendingAmount: 5000, status: 'Partial', date: '2026-08-03', lrNumber: 'LR-9840170', biltyNo: 'BL-84900' }
-];
-
 export default function DealerInvoices() {
-  const [data, setData] = useState(mockDealerInvoices);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState(mockDealerInvoices[0].id);
+  const [error, setError] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     const fetchInvoices = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await api.get('/orders/invoices/');
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          const formatted = res.data.map(i => ({
+        const res = await api.get('/invoices/');
+        const raw = res.data?.results || res.data;
+        if (Array.isArray(raw)) {
+          const formatted = raw.map(i => ({
             id: String(i.id),
-            invoiceNumber: i.invoice_number || `INV-2026-${i.id}`,
+            invoiceNumber: i.invoice_number,
+            orderNumber: i.order_number || '-',
             totalAmount: parseFloat(i.total_amount || 0),
             pendingAmount: parseFloat(i.balance_due || 0),
-            status: i.status || 'Unpaid',
-            date: new Date(i.created_at || Date.now()).toLocaleDateString(),
-            lrNumber: i.lr_number || `LR-9840${i.id}`,
-            biltyNo: i.bilty_no || `BL-8490${i.id}`
+            status: i.status || 'Pending',
+            date: new Date(i.created_at || i.generated_at).toLocaleDateString(),
+            lrNumber: i.lr_number || '-',
+            biltyNo: i.bilty_no || '-',
+            pdf: i.pdf
           }));
           setData(formatted);
           if (formatted.length > 0) setSelectedId(formatted[0].id);
+        } else {
+          setData([]);
         }
       } catch (err) {
         console.error('Failed to fetch dealer invoices', err);
+        setError('Failed to load your invoices from server. Please verify backend connection.');
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -47,14 +51,29 @@ export default function DealerInvoices() {
 
   const filteredInvoices = useMemo(() => {
     return data.filter(i =>
-      i.invoiceNumber.toLowerCase().includes(search.toLowerCase())
+      i.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
+      (i.orderNumber && i.orderNumber.toLowerCase().includes(search.toLowerCase()))
     );
   }, [data, search]);
 
-  const selectedInvoice = data.find(i => i.id === selectedId) || data[0];
+  const selectedInvoice = data.find(i => i.id === selectedId) || (data.length > 0 ? data[0] : null);
 
-  const handleDownloadFile = (type, name) => {
-    alert(`Downloading ${type} document for ${name}...`);
+  const handleDownloadFile = async (type, inv) => {
+    if (!inv) return;
+    if (inv.pdf) {
+      window.open(inv.pdf, '_blank');
+      return;
+    }
+    try {
+      const res = await api.get(`/invoices/${inv.id}/generate_pdf/`);
+      if (res.data?.download_url) {
+        window.open(res.data.download_url, '_blank');
+      } else {
+        alert(`Invoice ${inv.invoiceNumber} PDF download initiated.`);
+      }
+    } catch (e) {
+      alert(`Could not download ${type} for invoice ${inv.invoiceNumber}`);
+    }
   };
 
   const masterContent = (
@@ -76,11 +95,18 @@ export default function DealerInvoices() {
             sx: { bgcolor: '#fff', borderRadius: 1.5 }
           }}
         />
+        {error && (
+          <Alert severity="error" sx={{ m: 1.5 }}>{error}</Alert>
+        )}
       </Box>
       <List sx={{ p: 0, flex: 1, overflowY: 'auto' }}>
-        {filteredInvoices.length === 0 ? (
+        {loading ? (
+          <Box p={4} textAlign="center">
+            <CircularProgress size={28} />
+          </Box>
+        ) : filteredInvoices.length === 0 ? (
           <Box p={3} textAlign="center">
-            <Typography variant="body2" color="textSecondary">No invoices found.</Typography>
+            <Typography variant="body2" color="textSecondary">No invoices found for your account.</Typography>
           </Box>
         ) : (
           filteredInvoices.map((i) => (
@@ -133,13 +159,13 @@ export default function DealerInvoices() {
 
       {/* Download Action Buttons */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" gap={1}>
-        <Button variant="contained" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('Invoice PDF', selectedInvoice.invoiceNumber)}>
+        <Button variant="contained" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('Invoice PDF', selectedInvoice)}>
           Download Invoice PDF
         </Button>
-        <Button variant="outlined" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('Bill Receipt', selectedInvoice.invoiceNumber)}>
+        <Button variant="outlined" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('Bill Receipt', selectedInvoice)}>
           Download Bill
         </Button>
-        <Button variant="outlined" color="secondary" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('LR / Bilty', selectedInvoice.invoiceNumber)}>
+        <Button variant="outlined" color="secondary" startIcon={<DownloadOutlined />} onClick={() => handleDownloadFile('LR / Bilty', selectedInvoice)}>
           Download LR / Bilty ({selectedInvoice.lrNumber})
         </Button>
       </Stack>

@@ -37,6 +37,8 @@ export const AdminDistributors: React.FC<AdminDistributorsProps> = ({ distributo
               <th className="p-3 font-semibold">Territory</th>
               <th className="p-3 font-semibold text-center">Dealers</th>
               <th className="p-3 font-semibold text-right">Monthly Sales</th>
+              <th className="p-3 font-semibold text-right">Monthly Sales Plan</th>
+              <th className="p-3 font-semibold text-right">Monthly Collection Plan</th>
               <th className="p-3 font-semibold text-right">Outstanding</th>
               <th className="p-3 font-semibold">Status</th>
             </tr>
@@ -51,6 +53,12 @@ export const AdminDistributors: React.FC<AdminDistributorsProps> = ({ distributo
                 <td className="p-3 text-center font-bold text-[#161616]">{d.dealersCount}</td>
                 <td className="p-3 text-right font-bold text-[#198038]">
                   ₹{(d.monthlySales || 0).toLocaleString('en-IN')}
+                </td>
+                <td className="p-3 text-right font-bold text-[#0f62fe]">
+                  ₹{(d.monthlySalesPlan || 0).toLocaleString('en-IN')}
+                </td>
+                <td className="p-3 text-right font-bold text-[#8a3ffc]">
+                  ₹{(d.monthlyCollectionPlan || 0).toLocaleString('en-IN')}
                 </td>
                 <td className="p-3 text-right font-bold text-[#da1e28]">
                   ₹{(d.outstandingBalance || 0).toLocaleString('en-IN')}

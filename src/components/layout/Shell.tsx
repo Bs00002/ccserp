@@ -93,7 +93,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </Box>
         </Drawer>
 
-        <Box component="main" sx={{ flexGrow: 1, p: 3, width: `calc(100% - ${drawerWidth}px)` }}>
+        <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 1.5, sm: 3 }, width: { xs: '100%', lg: `calc(100% - ${drawerWidth}px)` } }}>
           <Toolbar />
           <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 600 }}>Home</Link>

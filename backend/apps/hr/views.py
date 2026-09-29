@@ -7,7 +7,11 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from apps.accounts.models import UserRole
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum
+from apps.accounts.models import User, UserRole, EmployeeProfile, DistributorProfile
+from apps.orders.models import Order, OrderStatus
+from apps.wallet.models import LedgerEntry
 from .models import Attendance, DealerVisit, Expense, ExpenseStatus, LocationTrack, DailyTourPlan
 from .serializers import AttendanceSerializer, DealerVisitSerializer, ExpenseSerializer, LocationTrackSerializer, DailyTourPlanSerializer
 
@@ -351,3 +355,144 @@ class ExpenseViewSet(HRBaseViewSet):
         expense.approved_by = request.user
         expense.save()
         return Response(ExpenseSerializer(expense).data)
+
+
+def format_target_payload(user):
+    target_amount = 0.0
+    monthly_sales_plan = 0.0
+    monthly_collection_plan = 0.0
+    designation = 'Field Representative'
+
+    if hasattr(user, 'employee_profile'):
+        ep = user.employee_profile
+        target_amount = float(ep.sales_target or 0.0)
+        monthly_sales_plan = float(ep.monthly_sales_plan or 0.0)
+        monthly_collection_plan = float(ep.monthly_collection_plan or 0.0)
+        designation = ep.designation or ('Distributor Partner' if user.role == UserRole.DISTRIBUTOR else 'Sales Executive')
+    elif hasattr(user, 'distributor_profile'):
+        dp = user.distributor_profile
+        target_amount = float(round(dp.daily_sales_target * 30, 2)) if dp.daily_sales_target > 0 else float(dp.monthly_sales_plan or 0.0)
+        monthly_sales_plan = float(dp.monthly_sales_plan or 0.0)
+        monthly_collection_plan = float(dp.monthly_collection_plan or 0.0)
+        designation = 'Distributor Partner'
+
+    # Calculate actual sales from real orders
+    actual_sales = float(
+        Order.objects.filter(
+            created_by=user,
+            status__in=[
+                OrderStatus.APPROVED,
+                OrderStatus.BILTY_UPLOADED,
+                OrderStatus.READY_DISPATCH,
+                OrderStatus.DISPATCHED,
+                OrderStatus.DELIVERED
+            ]
+        ).aggregate(total=Sum('grand_total'))['total'] or 0.0
+    )
+
+    # Calculate actual collections from real wallet ledger
+    actual_collections = float(
+        LedgerEntry.objects.filter(
+            created_by=user,
+            type='Collection'
+        ).aggregate(total=Sum('amount'))['total'] or 0.0
+    )
+
+    achieved_amount = actual_sales
+    percentage = round((achieved_amount / target_amount) * 100) if target_amount > 0 else 0
+    if percentage >= 100:
+        target_status = 'Achieved'
+    elif percentage >= 75:
+        target_status = 'On Track'
+    else:
+        target_status = 'Behind'
+
+    return {
+        'id': str(user.id),
+        'userId': str(user.id),
+        'assigneeName': f"{user.first_name} {user.last_name}".strip() or user.username,
+        'assigneeType': 'Distributor' if user.role == UserRole.DISTRIBUTOR else 'Employee',
+        'designation': designation,
+        'period': 'Current Month',
+        'periodType': 'Monthly',
+        'targetAmount': target_amount,
+        'monthlySalesPlan': monthly_sales_plan,
+        'monthlyCollectionPlan': monthly_collection_plan,
+        'achievedAmount': achieved_amount,
+        'actualCollections': actual_collections,
+        'percentage': percentage,
+        'status': target_status,
+        'email': user.email,
+    }
+
+
+class SalesTargetViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        user = request.user
+        if user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
+            target_users = User.objects.filter(
+                role__in=[UserRole.DISTRIBUTOR, UserRole.ADMIN]
+            ).exclude(role=UserRole.DEALER).order_by('first_name', 'username')
+        else:
+            target_users = User.objects.filter(id=user.id)
+
+        data = [format_target_payload(u) for u in target_users]
+        return Response(data)
+
+    def retrieve(self, request, pk=None):
+        target_user = get_object_or_404(User, pk=pk)
+        if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN] and request.user.id != target_user.id:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(format_target_payload(target_user))
+
+    def update(self, request, pk=None):
+        return self._do_update(request, pk)
+
+    def partial_update(self, request, pk=None):
+        return self._do_update(request, pk)
+
+    @action(detail=True, methods=['post'])
+    def update_target(self, request, pk=None):
+        return self._do_update(request, pk)
+
+    def _do_update(self, request, pk):
+        if request.user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
+            return Response({"error": "Unauthorized. Only Admin can update targets."}, status=status.HTTP_403_FORBIDDEN)
+
+        target_user = get_object_or_404(User, pk=pk)
+        target_amount = request.data.get('targetAmount')
+        if target_amount is None:
+            target_amount = request.data.get('target_amount')
+
+        monthly_sales_plan = request.data.get('monthlySalesPlan')
+        if monthly_sales_plan is None:
+            monthly_sales_plan = request.data.get('monthly_sales_plan')
+
+        monthly_collection_plan = request.data.get('monthlyCollectionPlan')
+        if monthly_collection_plan is None:
+            monthly_collection_plan = request.data.get('monthly_collection_plan')
+
+        # Always save EmployeeProfile to have exact sales_target
+        emp_prof, _ = EmployeeProfile.objects.get_or_create(user=target_user)
+        if target_amount is not None:
+            emp_prof.sales_target = float(target_amount)
+        if monthly_sales_plan is not None:
+            emp_prof.monthly_sales_plan = float(monthly_sales_plan)
+        if monthly_collection_plan is not None:
+            emp_prof.monthly_collection_plan = float(monthly_collection_plan)
+        emp_prof.save()
+
+        if target_user.role == UserRole.DISTRIBUTOR:
+            dist_prof, _ = DistributorProfile.objects.get_or_create(user=target_user)
+            if target_amount is not None:
+                dist_prof.daily_sales_target = float(target_amount) / 30.0
+            if monthly_sales_plan is not None:
+                dist_prof.monthly_sales_plan = float(monthly_sales_plan)
+            if monthly_collection_plan is not None:
+                dist_prof.monthly_collection_plan = float(monthly_collection_plan)
+            dist_prof.save()
+
+        return Response(format_target_payload(target_user))
+

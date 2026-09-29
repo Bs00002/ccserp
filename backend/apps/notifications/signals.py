@@ -3,9 +3,12 @@ from django.dispatch import receiver
 from apps.orders.models import Order
 from apps.accounts.models import User
 from .models import Notification, NotificationType
+from apps.common.events import broadcast_erp_event
 
 @receiver(post_save, sender=Order)
 def order_notification(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created:
         # Notify admins
         admins = User.objects.filter(role__in=['Super Admin', 'Admin'])
@@ -35,6 +38,8 @@ def order_notification(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def user_registration_notification(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created and instance.role in ['Dealer', 'Distributor', 'Employee']:
         if not instance.is_active:
             admins = User.objects.filter(role__in=['Super Admin', 'Admin'])
@@ -52,3 +57,21 @@ def user_registration_notification(sender, instance, created, **kwargs):
                 message="Your account is active.",
                 type=NotificationType.SYSTEM
             )
+
+@receiver(post_save, sender=Notification)
+def notification_broadcast(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
+    if created:
+        broadcast_erp_event(
+            event_type='notification.created',
+            payload={
+                "id": str(instance.id),
+                "title": instance.title,
+                "message": instance.message,
+                "type": instance.type,
+                "is_read": instance.is_read,
+                "created_at": instance.created_at.isoformat() if hasattr(instance, 'created_at') and instance.created_at else None
+            },
+            target_user_ids=[str(instance.user_id)]
+        )

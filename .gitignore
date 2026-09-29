@@ -22,6 +22,10 @@ __pycache__/
 db.sqlite3
 media/
 staticfiles/
+backups/
+*.dump
+*.rdb
+*.bak
 
 # Editor directories and files
 .vscode/*
@@ -36,3 +40,17 @@ staticfiles/
 
 # Temporary export folders
 ccserp/
+cloudflared.exe
+*.zip
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.cxx/
+*.apk
+dist/
+dist-ssr/
+ccsps/ccs-partners-/dist/
+.git_sub_bak/
+**/.git_sub_bak/

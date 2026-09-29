@@ -27,19 +27,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleQuickLogin = async (role: 'ADMIN' | 'DISTRIBUTOR' | 'DEALER') => {
+  const handleQuickLogin = async (role: 'ADMIN' | 'EMPLOYEE' | 'DISTRIBUTOR' | 'WAREHOUSE') => {
     setError('');
     setLoading(true);
     try {
-      let u = 'admin';
-      let p = 'adminpass';
-      if (role === 'DISTRIBUTOR') {
-        u = 'testdistributor@example.com';
+      let u = 'master_admin@ccs.com';
+      let p = 'AdminPass123!';
+      if (role === 'EMPLOYEE') {
+        u = 'master_emp@ccs.com';
+        p = 'EmpPass123!';
+      } else if (role === 'DISTRIBUTOR') {
+        u = 'testdistributor@ccs.com';
         p = 'Testing@123';
-      } else if (role === 'DEALER') {
-        u = 'testdealer@example.com';
-        p = 'Testing@123';
+      } else if (role === 'WAREHOUSE') {
+        u = 'warehouse@ccs.com';
+        p = 'Ccs@12345';
       }
+      setUsername(u);
+      setPassword(p);
       const res = await authApi.login(u, p);
       onLoginSuccess(res.user);
     } catch (err: any) {
@@ -64,27 +69,34 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <label className="block text-[11px] font-bold text-[#334155] uppercase tracking-wider mb-2 text-center">
             Quick Role Demo Access
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => handleQuickLogin('ADMIN')}
-              className="px-2 py-2 text-xs font-semibold rounded bg-[#16a34a] hover:bg-[#15803d] text-white transition cursor-pointer"
+              className="px-2 py-2 text-xs font-semibold rounded bg-[#16a34a] hover:bg-[#15803d] text-white transition cursor-pointer text-center"
             >
               ADMIN
             </button>
             <button
               type="button"
-              onClick={() => handleQuickLogin('DISTRIBUTOR')}
-              className="px-2 py-2 text-xs font-semibold rounded bg-[#0f766e] hover:bg-[#115e59] text-white transition cursor-pointer"
+              onClick={() => handleQuickLogin('EMPLOYEE')}
+              className="px-2 py-2 text-xs font-semibold rounded bg-[#0f766e] hover:bg-[#115e59] text-white transition cursor-pointer text-center"
             >
               EMPLOYEE
             </button>
             <button
               type="button"
-              onClick={() => handleQuickLogin('DEALER')}
-              className="px-2 py-2 text-xs font-semibold rounded bg-[#15803d] hover:bg-[#166534] text-white transition cursor-pointer"
+              onClick={() => handleQuickLogin('DISTRIBUTOR')}
+              className="px-2 py-2 text-xs font-semibold rounded bg-[#15803d] hover:bg-[#166534] text-white transition cursor-pointer text-center"
             >
-              DEALER
+              DISTRIBUTOR
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('WAREHOUSE')}
+              className="px-2 py-2 text-xs font-semibold rounded bg-[#0284c7] hover:bg-[#0369a1] text-white transition cursor-pointer text-center"
+            >
+              WAREHOUSE
             </button>
           </div>
         </div>
@@ -144,7 +156,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-[#64748b] mt-6">
+        <div className="mt-5 pt-4 border-t border-[#e2e8f0] text-center">
+          <a
+            href="/downloads/CCS-Connect.apk"
+            download="CCS-Connect.apk"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] hover:text-[#15803d] hover:underline transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">android</span>
+            <span>Download CCS Connect Mobile App (APK)</span>
+          </a>
+        </div>
+
+        <p className="text-center text-[11px] text-[#64748b] mt-4">
           CCS Partners ERP v2.0 • Secured with JWT Authentication & PostgreSQL
         </p>
       </div>

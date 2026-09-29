@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from 'api/client';
+import useRealtime from 'hooks/useRealtime';
 import { AdminOrders as StitchAdminOrders } from '../../views/admin/AdminOrders';
 import { AdminOrderDetail as StitchAdminOrderDetail } from '../../views/admin/AdminOrderDetail';
-import { MOCK_ORDERS } from '../../data/stitchMockData';
 
 export default function OrdersList() {
   const navigate = useNavigate();
@@ -43,11 +43,11 @@ export default function OrdersList() {
         }));
         setOrders(mappedOrders);
       } else {
-        setOrders(MOCK_ORDERS);
+        setOrders([]);
       }
     } catch (err) {
       console.error('Error fetching real orders:', err);
-      setOrders(MOCK_ORDERS);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -56,6 +56,14 @@ export default function OrdersList() {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Real-time listener: auto-update order list when orders change
+  useRealtime(
+    ['order.created', 'order.updated', 'order.approved', 'order.bilty_created', 'order.lr_created', 'order.dispatched'],
+    () => {
+      fetchOrders();
+    }
+  );
 
   const handleCreateOrder = () => {
     navigate('/field/orders/create');

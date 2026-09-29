@@ -62,15 +62,19 @@ export default function UserManagement() {
       const res = await api.get(`/admin/users/${user.id}/`);
       
       const userData = res.data;
-      let state = '', district = '', territory = '';
+      let state = '', district = '', territory = '', monthly_sales_plan = '', monthly_collection_plan = '';
       if (userData.role === 'Distributor' && userData.distributor_profile) {
           state = userData.distributor_profile.state || '';
           district = userData.distributor_profile.district || '';
           territory = userData.distributor_profile.territory || '';
+          monthly_sales_plan = userData.distributor_profile.monthly_sales_plan || '';
+          monthly_collection_plan = userData.distributor_profile.monthly_collection_plan || '';
       } else if (userData.role === 'Employee' && userData.employee_profile) {
           state = userData.employee_profile.state || '';
           district = userData.employee_profile.district || '';
           territory = userData.employee_profile.territory || '';
+          monthly_sales_plan = userData.employee_profile.monthly_sales_plan || '';
+          monthly_collection_plan = userData.employee_profile.monthly_collection_plan || '';
       }
       
       setSelectedUser({
@@ -78,6 +82,8 @@ export default function UserManagement() {
         state,
         district,
         territory,
+        monthly_sales_plan,
+        monthly_collection_plan,
         joining_date: userData.joining_date || ''
       });
       setOpenDialog(true);
@@ -96,6 +102,8 @@ export default function UserManagement() {
       state: '',
       district: '',
       territory: '',
+      monthly_sales_plan: '',
+      monthly_collection_plan: '',
       joining_date: ''
     });
     setOpenDialog(true);
@@ -155,6 +163,8 @@ export default function UserManagement() {
                   <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Territory</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Monthly Sales Plan</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Monthly Collection Plan</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Active</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
@@ -163,8 +173,18 @@ export default function UserManagement() {
               <TableBody>
                 {users.map((row) => {
                   let territory = 'N/A';
-                  if (row.role === 'Distributor' && row.distributor_profile) territory = row.distributor_profile.territory || 'N/A';
-                  if (row.role === 'Employee' && row.employee_profile) territory = row.employee_profile.territory || 'N/A';
+                  let salesPlan = '—';
+                  let collPlan = '—';
+                  if (row.role === 'Distributor' && row.distributor_profile) {
+                    territory = row.distributor_profile.territory || 'N/A';
+                    if (row.distributor_profile.monthly_sales_plan) salesPlan = `₹${Number(row.distributor_profile.monthly_sales_plan).toLocaleString('en-IN')}`;
+                    if (row.distributor_profile.monthly_collection_plan) collPlan = `₹${Number(row.distributor_profile.monthly_collection_plan).toLocaleString('en-IN')}`;
+                  }
+                  if (row.role === 'Employee' && row.employee_profile) {
+                    territory = row.employee_profile.territory || 'N/A';
+                    if (row.employee_profile.monthly_sales_plan) salesPlan = `₹${Number(row.employee_profile.monthly_sales_plan).toLocaleString('en-IN')}`;
+                    if (row.employee_profile.monthly_collection_plan) collPlan = `₹${Number(row.employee_profile.monthly_collection_plan).toLocaleString('en-IN')}`;
+                  }
                   
                   return (
                     <TableRow key={row.id} hover>
@@ -187,6 +207,12 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">{territory}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{salesPlan}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{collPlan}</Typography>
                       </TableCell>
                       <TableCell>
                         <Chip 
@@ -335,6 +361,28 @@ export default function UserManagement() {
                     fullWidth 
                     value={selectedUser?.territory || ''} 
                     onChange={e => setSelectedUser({...selectedUser, territory: e.target.value})}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>Monthly Planning</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField 
+                    label="Monthly Sales Plan" 
+                    fullWidth 
+                    type="number"
+                    value={selectedUser?.monthly_sales_plan || ''} 
+                    onChange={e => setSelectedUser({...selectedUser, monthly_sales_plan: e.target.value})}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField 
+                    label="Monthly Collection Plan" 
+                    fullWidth 
+                    type="number"
+                    value={selectedUser?.monthly_collection_plan || ''} 
+                    onChange={e => setSelectedUser({...selectedUser, monthly_collection_plan: e.target.value})}
                   />
                 </Grid>
               </>

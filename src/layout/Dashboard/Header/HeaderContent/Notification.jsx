@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // material-ui
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -20,13 +21,16 @@ import Box from '@mui/material/Box';
 import MainCard from 'components/MainCard';
 import IconButton from 'components/@extended/IconButton';
 import Transitions from 'components/@extended/Transitions';
+import api from 'api/client';
+import useRealtime from 'hooks/useRealtime';
 
 // assets
 import BellOutlined from '@ant-design/icons/BellOutlined';
 import CheckCircleOutlined from '@ant-design/icons/CheckCircleOutlined';
-import GiftOutlined from '@ant-design/icons/GiftOutlined';
 import MessageOutlined from '@ant-design/icons/MessageOutlined';
-import SettingOutlined from '@ant-design/icons/SettingOutlined';
+import InfoCircleOutlined from '@ant-design/icons/InfoCircleOutlined';
+import WarningOutlined from '@ant-design/icons/WarningOutlined';
+import SafetyCertificateOutlined from '@ant-design/icons/SafetyCertificateOutlined';
 
 // sx styles
 const avatarSX = {
@@ -41,18 +45,50 @@ const actionSX = {
   top: 'auto',
   right: 'auto',
   alignSelf: 'flex-start',
-
   transform: 'none'
+};
+
+const TYPE_ICONS = {
+  info: <InfoCircleOutlined />,
+  success: <CheckCircleOutlined />,
+  warning: <WarningOutlined />,
+  error: <WarningOutlined />,
+  approval: <SafetyCertificateOutlined />,
+  message: <MessageOutlined />
 };
 
 // ==============================|| HEADER CONTENT - NOTIFICATION ||============================== //
 
 export default function Notification() {
+  const navigate = useNavigate();
   const downMD = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   const anchorRef = useRef(null);
-  const [read, setRead] = useState(2);
   const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/');
+      const data = Array.isArray(res.data) ? res.data : [];
+      setNotifications(data.slice(0, 5));
+      const unread = data.filter((n) => !n.is_read).length;
+      setUnreadCount(unread);
+    } catch {
+      // Keep silent fallback if unauthenticated or offline
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Real-time listener: refresh badge & notification list when new notification arrives
+  useRealtime('notification.created', () => {
+    fetchNotifications();
+  });
+
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
@@ -64,22 +100,32 @@ export default function Notification() {
     setOpen(false);
   };
 
+  const handleMarkAllRead = async () => {
+    try {
+      await api.post('/notifications/mark_all_read/');
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {
+      setUnreadCount(0);
+    }
+  };
+
   return (
     <Box sx={{ flexShrink: 0, ml: 0.75 }}>
       <IconButton
         color="secondary"
         variant="light"
-        sx={(theme) => ({
+        sx={{
           color: 'text.primary',
           bgcolor: open ? 'grey.100' : 'transparent'
-        })}
+        }}
         aria-label="open profile"
         ref={anchorRef}
         aria-controls={open ? 'profile-grow' : undefined}
         aria-haspopup="true"
         onClick={handleToggle}
       >
-        <Badge badgeContent={read} color="primary">
+        <Badge badgeContent={unreadCount} color="primary">
           <BellOutlined />
         </Badge>
       </IconButton>
@@ -97,15 +143,15 @@ export default function Notification() {
             <Paper sx={(theme) => ({ boxShadow: theme.customShadows.z1, width: '100%', minWidth: 285, maxWidth: { xs: 285, md: 420 } })}>
               <ClickAwayListener onClickAway={handleClose}>
                 <MainCard
-                  title="Notification"
+                  title="Notifications"
                   elevation={0}
                   border={false}
                   content={false}
                   secondary={
                     <>
-                      {read > 0 && (
+                      {unreadCount > 0 && (
                         <Tooltip title="Mark as all read">
-                          <IconButton color="success" size="small" onClick={() => setRead(0)}>
+                          <IconButton color="success" size="small" onClick={handleMarkAllRead}>
                             <CheckCircleOutlined style={{ fontSize: '1.15rem' }} />
                           </IconButton>
                         </Tooltip>
@@ -126,119 +172,62 @@ export default function Notification() {
                       }
                     }}
                   >
-                    <ListItem
-                      component={ListItemButton}
-                      divider
-                      selected={read > 0}
-                      secondaryAction={
-                        <Typography variant="caption" noWrap>
-                          3:00 AM
+                    {notifications.length === 0 ? (
+                      <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary">
+                          No notifications yet
                         </Typography>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ color: 'success.main', bgcolor: 'success.lighter' }}>
-                          <GiftOutlined />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="h6">
-                            It&apos;s{' '}
-                            <Typography component="span" variant="subtitle1">
-                              Cristina danny&apos;s
-                            </Typography>{' '}
-                            birthday today.
-                          </Typography>
-                        }
-                        secondary="2 min ago"
-                      />
-                    </ListItem>
-                    <ListItem
-                      component={ListItemButton}
-                      divider
-                      secondaryAction={
-                        <Typography variant="caption" noWrap>
-                          6:00 AM
-                        </Typography>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ color: 'primary.main', bgcolor: 'primary.lighter' }}>
-                          <MessageOutlined />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="h6">
-                            <Typography component="span" variant="subtitle1">
-                              Aida Burg
-                            </Typography>{' '}
-                            commented your post.
-                          </Typography>
-                        }
-                        secondary="5 August"
-                      />
-                    </ListItem>
-                    <ListItem
-                      component={ListItemButton}
-                      divider
-                      selected={read > 0}
-                      secondaryAction={
-                        <Typography variant="caption" noWrap>
-                          2:45 PM
-                        </Typography>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ color: 'error.main', bgcolor: 'error.lighter' }}>
-                          <SettingOutlined />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="h6">
-                            Your Profile is Complete &nbsp;
-                            <Typography component="span" variant="subtitle1">
-                              60%
-                            </Typography>{' '}
-                          </Typography>
-                        }
-                        secondary="7 hours ago"
-                      />
-                    </ListItem>
-                    <ListItem
-                      component={ListItemButton}
-                      divider
-                      secondaryAction={
-                        <Typography variant="caption" noWrap>
-                          9:10 PM
-                        </Typography>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ color: 'primary.main', bgcolor: 'primary.lighter' }}>C</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="h6">
-                            <Typography component="span" variant="subtitle1">
-                              Cristina Danny
-                            </Typography>{' '}
-                            invited to join{' '}
-                            <Typography component="span" variant="subtitle1">
-                              Meeting.
+                      </Box>
+                    ) : (
+                      notifications.map((n) => (
+                        <ListItem
+                          key={n.id}
+                          component={ListItemButton}
+                          divider
+                          selected={!n.is_read}
+                          onClick={() => {
+                            if (n.action_url) {
+                              navigate(n.action_url);
+                              setOpen(false);
+                            }
+                          }}
+                          secondaryAction={
+                            <Typography variant="caption" noWrap>
+                              {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                             </Typography>
-                          </Typography>
-                        }
-                        secondary="Daily scrum meeting time"
-                      />
-                    </ListItem>
-                    <ListItemButton sx={{ textAlign: 'center', py: `${12}px !important` }}>
+                          }
+                        >
+                          <ListItemAvatar>
+                            <Avatar sx={{ color: 'primary.main', bgcolor: 'primary.lighter' }}>
+                              {TYPE_ICONS[n.notification_type] || <BellOutlined />}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography variant="subtitle2" noWrap>
+                                {n.title}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="textSecondary" noWrap>
+                                {n.message}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      ))
+                    )}
+                    <ListItemButton
+                      sx={{ textAlign: 'center', py: `${12}px !important` }}
+                      onClick={() => {
+                        setOpen(false);
+                        navigate('/other/notifications');
+                      }}
+                    >
                       <ListItemText
                         primary={
                           <Typography variant="h6" sx={{ color: 'primary.main' }}>
-                            View All
+                            View All Notifications
                           </Typography>
                         }
                       />

@@ -37,6 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ? 'DEALER'
     : rawRole.includes('DISTRIBUTOR')
     ? 'DISTRIBUTOR'
+    : rawRole.includes('WAREHOUSE')
+    ? 'WAREHOUSE'
     : 'ADMIN';
 
   const currentActive = activeView || activeTab || 'dashboard';
@@ -45,8 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (currentRole === 'ADMIN') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-        { id: 'dealers', label: 'Dealers', icon: 'storefront' },
-        { id: 'distributors', label: 'Distributor / Employee', icon: 'badge' },
+        { id: 'dealers', label: 'Distributors', icon: 'domain' },
+        { id: 'distributors', label: 'Employees', icon: 'badge' },
         { id: 'registration-approval', label: 'Registration Approval', icon: 'how_to_reg' },
         { id: 'products', label: 'Products', icon: 'inventory_2' },
         { id: 'orders', label: 'Orders', icon: 'shopping_cart' },
@@ -67,9 +69,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'orders', label: 'Order List', icon: 'history' },
         { id: 'expenses', label: 'Expense List', icon: 'receipt_long' },
         { id: 'plan-report', label: 'Plan & Report', icon: 'calendar_month' },
-        { id: 'dealers', label: 'Dealer List', icon: 'group' },
+        { id: 'dealers', label: 'Distributor List', icon: 'group' },
         { id: 'products', label: 'Products Catalog', icon: 'inventory_2' },
+        { id: 'monthly-sales-plan', label: 'Monthly Sales Plan', icon: 'trending_up' },
+        { id: 'monthly-collection-plan', label: 'Monthly Collection Plan', icon: 'payments' },
         { id: 'profile', label: 'My Profile', icon: 'person' },
+        { id: 'support', label: 'Support', icon: 'headset_mic' },
+        { id: 'logout', label: 'Logout', icon: 'logout' },
+      ];
+    } else if (currentRole === 'WAREHOUSE') {
+      // WAREHOUSE PORTAL (5 EXPLICIT ITEMS: Dashboard, Orders, Order List, Support, Logout)
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+        { id: 'orders', label: 'Orders', icon: 'local_shipping' },
+        { id: 'order-list', label: 'Order List', icon: 'format_list_bulleted' },
         { id: 'support', label: 'Support', icon: 'headset_mic' },
         { id: 'logout', label: 'Logout', icon: 'logout' },
       ];
@@ -119,8 +132,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        {/* Quick Action Button (Hidden for Dealer) */}
-        {currentRole !== 'DEALER' && (
+        {/* Quick Action Button (Hidden for Dealer & Warehouse) */}
+        {currentRole !== 'DEALER' && currentRole !== 'WAREHOUSE' && (
           <div className="px-3 mb-3">
             <button
               onClick={handleQuick}
@@ -179,8 +192,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        {/* Footer Logout */}
-        <div className="px-2 pt-2 border-t border-[#e2e8f0] mt-auto">
+        {/* Footer Links & Logout */}
+        <div className="px-2 pt-2 border-t border-[#e2e8f0] mt-auto space-y-0.5">
+          <a
+            href="/downloads/CCS-Connect.apk"
+            download="CCS-Connect.apk"
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[#16a34a] hover:bg-[#f0fdf4] hover:text-[#15803d] transition-colors text-xs font-bold rounded-md"
+            title="Download Android APK"
+          >
+            <span className="material-symbols-outlined text-[18px]">android</span>
+            <span>Download Mobile App</span>
+          </a>
           <button
             onClick={() => handleSelect('support')}
             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition-colors text-xs font-medium rounded-md cursor-pointer"
